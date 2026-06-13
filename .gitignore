@@ -35,6 +35,9 @@ coverage/
 playwright-report/
 test-results/
 
+# Wrangler / Miniflare
+.wrangler/
+
 # DevSecOps
 secrets.json
 *-credential.json
