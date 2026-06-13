@@ -1,0 +1,175 @@
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-primary: #4f7bff;
+  --color-primary-hover: #3366ee;
+  --color-background-light: #ffffff;
+  --color-background-dark: #0f172a;
+  --color-card-dark: #1e293b;
+  --color-card-light: #ffffff;
+  --color-surface-dark: #1e293b;
+  --color-surface-darker: #0f172a;
+  --color-nav-bg: #0f172a;
+  --color-background-card: #1e293b;
+  --color-background-input: #334155;
+  --color-text-muted: #94a3b8;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-heading: 'Fraunces', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius-default: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+
+  --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes pulse-slow {
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.5;
+    }
+  }
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    @apply bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 transition-colors duration-300;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    @apply uppercase tracking-tight;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4f7bff;
+  }
+}
+
+@layer utilities {
+  .hero-pattern {
+    background-image: radial-gradient(#4f7bff 1.5px, transparent 1.5px);
+    background-size: 30px 30px;
+    mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 0) 100%
+    );
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+
+  .code-block-wrapper {
+    @apply my-8 rounded-xl overflow-hidden bg-[#0f172a] border border-slate-700 shadow-lg;
+  }
+
+  .code-header {
+    @apply flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700;
+  }
+
+  /* Remove prose code block styles to merge with wrapper */
+  .prose .code-block-wrapper pre {
+    @apply !bg-transparent !m-0 !p-4 !rounded-none;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .prose .code-block-wrapper code {
+    @apply !bg-transparent !p-0 !text-slate-300;
+    font-family: var(--font-mono);
+  }
+
+  /* Custom Syntax Highlighting Overrides to match design */
+  .code-block-wrapper .shiki span {
+    color: var(--shiki-light);
+  }
+
+  /* Keywords (def, import, from, return, try, except) */
+  .code-block-wrapper .shiki [style*='#C792EA'],
+  .code-block-wrapper .shiki [style*='#c792ea'] {
+    color: #c792ea !important;
+  }
+
+  /* Strings (teal/greenish) */
+  .code-block-wrapper .shiki [style*='#ECC48D'],
+  .code-block-wrapper .shiki [style*='#ecc48d'] {
+    color: #7fdbca !important;
+  }
+
+  /* Functions (blue) */
+  .code-block-wrapper .shiki [style*='#82AAFF'],
+  .code-block-wrapper .shiki [style*='#82aaff'] {
+    color: #82aaff !important;
+  }
+
+  /* Comments (gray-blue) */
+  .code-block-wrapper .shiki [style*='#5F7E97'],
+  .code-block-wrapper .shiki [style*='#5f7e97'] {
+    color: #5f7e97 !important;
+    font-style: italic;
+  }
+
+  /* Numbers/Constants (orange) */
+  .code-block-wrapper .shiki [style*='#F78C6C'],
+  .code-block-wrapper .shiki [style*='#f78c6c'] {
+    color: #f78c6c !important;
+  }
+
+  /* Variable/Plain text */
+  .code-block-wrapper .shiki [style*='#D6DEEB'],
+  .code-block-wrapper .shiki [style*='#d6deeb'],
+  .code-block-wrapper .shiki [style*='#ABB2BF'] {
+    color: #d6deeb !important;
+  }
+
+  .code-filename {
+    @apply text-xs font-mono text-slate-400;
+  }
+
+  .copy-button {
+    @apply flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-all;
+  }
+}
