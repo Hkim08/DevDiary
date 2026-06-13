@@ -1,0 +1,6 @@
+name = "devdiary"
+account_id = "e6cdefbd661e62e9763abb589f422ee0"
+compatibility_date = "2026-06-13"
+
+[assets]
+directory = "./dist"
