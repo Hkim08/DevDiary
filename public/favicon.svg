@@ -1,0 +1,19 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>DevDiary.uk favicon</title>
+  <!-- Rounded square bg -->
+  <rect width="32" height="32" rx="6" fill="#0F2744"/>
+  <!-- Left notebook page -->
+  <rect x="5" y="6" width="9" height="20" rx="1.5" fill="#1C2B3A"/>
+  <!-- Right page (blue = active/code) -->
+  <rect x="17" y="6" width="9" height="20" rx="1.5" fill="#1A6BDB"/>
+  <!-- Spine -->
+  <rect x="14" y="6" width="3" height="20" fill="#0F2744"/>
+  <!-- Left page lines -->
+  <rect x="7" y="11" width="5" height="1.5" rx="0.75" fill="#2D4060"/>
+  <rect x="7" y="15" width="4" height="1.5" rx="0.75" fill="#2D4060"/>
+  <rect x="7" y="19" width="5" height="1.5" rx="0.75" fill="#2D4060"/>
+  <!-- Right page cursor block -->
+  <rect x="19" y="11" width="4" height="5" rx="1" fill="#7BB8F4"/>
+  <rect x="19" y="18" width="5" height="1.5" rx="0.75" fill="#7BB8F4" opacity="0.6"/>
+  <rect x="19" y="21" width="3" height="1.5" rx="0.75" fill="#7BB8F4" opacity="0.4"/>
+</svg>

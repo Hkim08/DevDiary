@@ -1,0 +1,121 @@
+---
+/**
+ * SEO Head — full meta tags, Open Graph, Twitter Card, JSON-LD
+ * Usage: <SEOHead title="..." description="..." ... />
+ */
+import { SITE } from '@/lib/blog';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  pubDate?: Date;
+  updatedDate?: Date;
+  author?: string;
+  tags?: string[];
+  canonicalUrl?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = SITE.description,
+  ogImage = SITE.ogImage,
+  ogType = 'website',
+  pubDate,
+  updatedDate,
+  author = SITE.author,
+  tags = [],
+  canonicalUrl = Astro.url.href,
+  noindex = false,
+} = Astro.props;
+
+const pageTitle = title ? `${title} — ${SITE.name}` : SITE.name;
+const ogImageAbsolute = ogImage.startsWith('http') ? ogImage : `${SITE.url}${ogImage}`;
+
+// JSON-LD schema
+const schema = ogType === 'article'
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'TechArticle',
+      headline: title,
+      description,
+      image: ogImageAbsolute,
+      datePublished: pubDate?.toISOString(),
+      dateModified: (updatedDate ?? pubDate)?.toISOString(),
+      author: {
+        '@type': 'Person',
+        name: author,
+        url: SITE.url + '/about',
+        sameAs: [
+          'https://github.com/rachid',
+          'https://twitter.com/devdiary_uk',
+        ],
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: SITE.name,
+        url: SITE.url,
+        logo: { '@type': 'ImageObject', url: SITE.url + '/logo.svg' },
+      },
+      keywords: tags.join(', '),
+      mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+    }
+  : {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE.name,
+      url: SITE.url,
+      description: SITE.description,
+      author: { '@type': 'Person', name: SITE.author },
+    };
+---
+
+<!-- Primary meta -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+<title>{pageTitle}</title>
+<meta name="description" content={description} />
+<meta name="author" content={author} />
+{tags.length > 0 && <meta name="keywords" content={tags.join(', ')} />}
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+<link rel="canonical" href={canonicalUrl} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={ogType} />
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={ogImageAbsolute} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content={SITE.locale} />
+{ogType === 'article' && pubDate && (
+  <>
+    <meta property="article:published_time" content={pubDate.toISOString()} />
+    {updatedDate && <meta property="article:modified_time" content={updatedDate.toISOString()} />}
+    <meta property="article:author" content={author} />
+    {tags.map(tag => <meta property="article:tag" content={tag} />)}
+  </>
+)}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content={SITE.twitter} />
+<meta name="twitter:creator" content={SITE.twitter} />
+<meta name="twitter:title" content={pageTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImageAbsolute} />
+
+<!-- Favicons -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="alternate icon" href="/favicon.ico" sizes="any" />
+
+<!-- RSS -->
+<link rel="alternate" type="application/rss+xml" title={`${SITE.name} RSS`} href="/rss.xml" />
+
+<!-- JSON-LD -->
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

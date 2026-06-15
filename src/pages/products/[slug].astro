@@ -1,0 +1,329 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { products, type Product } from '@/data/products';
+import type { GetStaticPaths } from 'astro';
+
+export const getStaticPaths: GetStaticPaths = () => {
+  return products.map(p => ({
+    params: { slug: p.slug },
+    props: { product: p },
+  }));
+};
+
+const { product } = Astro.props as { product: Product };
+const canonicalUrl = `https://devdiary.uk/products/${product.slug}`;
+---
+
+<BaseLayout
+  title={`${product.name} — DevDiary Products`}
+  description={product.desc}
+  canonicalUrl={canonicalUrl}
+  ogType="website"
+>
+  <!-- Skip to main -->
+  <a href="#product-main" class="skip-link">Skip to product information</a>
+
+  <section id="product-main" class="product-hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-text-col">
+          <!-- Back link -->
+          <a href="/products" class="back-link" aria-label="Back to all products">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All products
+          </a>
+
+          <!-- Category + badge -->
+          <div class="hero-meta">
+            <span class="tag tag-default">{product.category}</span>
+            {product.badge && <span class="product-badge-hero">{product.badge}</span>}
+          </div>
+
+          <!-- Title area -->
+          <h1 class="product-title">{product.name}</h1>
+          <p class="product-tagline">{product.tagline}</p>
+
+          <!-- Price + CTA -->
+          <div class="hero-actions">
+            <div class="hero-price">
+              <span class="price-amount">${product.price}</span>
+              <span class="price-label">USD · one-time purchase</span>
+            </div>
+            <a href={product.gumroadUrl} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">
+              Buy on Gumroad →
+            </a>
+          </div>
+        </div>
+
+        <!-- Cover image column -->
+        {product.coverImage && (
+          <div class="hero-visual-col">
+            <div class="hero-image-wrapper">
+              <img src={product.coverImage} alt={`${product.name} dashboard preview`} class="hero-cover" loading="eager" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <!-- Highlights strip -->
+  {product.highlights && product.highlights.length > 0 && (
+    <section class="highlights-strip" aria-label="Product highlights">
+      <div class="container">
+        <div class="highlights-grid">
+          {product.highlights.map(h => (
+            <div class="highlight-item">
+              <svg class="highlight-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>{h}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Full description + inline image -->
+  <section class="product-section">
+    <div class="container">
+      {product.inlineImage ? (
+        <div class="desc-grid">
+          <div class="desc-text-col">
+            <span class="section-label">// about this product</span>
+            <div class="product-description product-description--left">
+              {product.descriptionLong.split('\n\n').map(p => <p>{p}</p>)}
+            </div>
+          </div>
+          <div class="desc-image-col">
+            <img src={product.inlineImage} alt={`${product.name} data entry view`} class="desc-inline-img" loading="lazy" />
+          </div>
+        </div>
+      ) : (
+        <div class="product-section-inner">
+          <div class="product-desc-col">
+            <span class="section-label">// about this product</span>
+            <div class="product-description">
+              {product.descriptionLong.split('\n\n').map(p => <p>{p}</p>)}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- Features grid -->
+  <section class="product-section features-section" aria-labelledby="features-heading">
+    <div class="container">
+      <span class="section-label">// what's included</span>
+      <h2 id="features-heading" class="visually-hidden">Features included in {product.name}</h2>
+      <div class="features-grid">
+        {product.features.map(f => (
+          <div class="feature-card">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span class="feature-text">{f}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots / gallery -->
+  {product.images && product.images.length > 0 && (
+    <section class="product-section gallery-section" aria-label="Product screenshots">
+      <div class="container">
+        <span class="section-label">// screenshots</span>
+        <div class="gallery-grid">
+          {product.images.map(src => (
+            <div class="gallery-item">
+              <img src={src} alt={`Screenshot of ${product.name}`} loading="lazy" class="gallery-img" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- FAQ -->
+  {product.faq && product.faq.length > 0 && (
+    <section class="product-section" aria-labelledby="faq-heading">
+      <div class="container product-section-inner">
+        <span class="section-label">// frequently asked questions</span>
+        <h2 id="faq-heading" class="visually-hidden">Frequently asked questions about {product.name}</h2>
+        <div class="faq-list">
+          {product.faq.map(item => (
+            <details class="faq-item" role="group">
+              <summary class="faq-question">
+                <span>{item.q}</span>
+                <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </summary>
+              <div class="faq-answer">
+                <p>{item.a}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Related blog posts -->
+  {product.blogPosts && product.blogPosts.length > 0 && (
+    <section class="product-section">
+      <div class="container">
+        <span class="section-label">// related articles</span>
+        <p class="related-posts-intro">Read more about how this product was built and how to use it:</p>
+        <ul class="related-posts-list">
+          {product.blogPosts.map(slug => (
+            <li>
+              <a href={`/blog/${slug}`} class="related-post-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span>/blog/{slug}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )}
+
+  <!-- Bottom CTA -->
+  <section class="product-section bottom-cta-section">
+    <div class="container">
+      <div class="bottom-cta-card">
+        <div class="bottom-cta-content">
+          <h2 class="bottom-cta-title">{product.name}</h2>
+          <p class="bottom-cta-desc">{product.tagline}</p>
+          <div class="bottom-cta-actions">
+            <a href={product.gumroadUrl} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">
+              Buy on Gumroad — ${product.price} →
+            </a>
+            <a href="/products" class="btn btn-ghost">View all products</a>
+          </div>
+        </div>
+        <div class="guarantee-trust">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>30-day money-back guarantee. No questions asked.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+/* --- Hero --- */
+.product-hero { padding: 48px 0 40px; }
+.hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.hero-text-col { min-width: 0; }
+.hero-visual-col { min-width: 0; display: flex; justify-content: center; align-items: center; }
+.hero-image-wrapper { width: 100%; position: relative; }
+.hero-cover { display: block; width: 100%; height: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.hero-cover:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25); }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--ink3); text-decoration: none; font-size: 13px; margin-bottom: 24px; transition: color var(--transition); }
+.back-link:hover { color: var(--v2); }
+.hero-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.product-badge-hero { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 4px; background: rgba(245,158,11,.15); color: var(--amber); letter-spacing: .03em; }
+.product-title { font-family: var(--heading); font-size: 38px; font-weight: 700; color: var(--ink); letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 12px; }
+.product-tagline { font-size: 17px; color: var(--ink2); max-width: 480px; line-height: 1.6; margin-bottom: 28px; }
+.hero-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.hero-price { display: flex; align-items: baseline; gap: 8px; }
+.price-amount { font-family: var(--heading); font-size: 36px; font-weight: 700; color: var(--teal); letter-spacing: -0.03em; }
+.price-label { font-size: 13px; color: var(--ink3); }
+.btn-lg { padding: 12px 28px; font-size: 15px; border-radius: 10px; }
+
+/* --- Highlights strip --- */
+.highlights-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 20px 0; margin-bottom: 48px; }
+.highlights-grid { display: flex; gap: 32px; flex-wrap: wrap; }
+.highlight-item { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink2); font-weight: 450; }
+.highlight-check { color: var(--teal); flex-shrink: 0; }
+
+/* --- Sections --- */
+.product-section { padding-bottom: 56px; }
+.product-section-inner { max-width: 720px; }
+.section-label { display: block; margin-bottom: 16px; }
+
+/* --- Description --- */
+.product-desc-col { max-width: 680px; }
+.product-description { font-size: 16px; color: var(--ink2); line-height: 1.75; }
+.product-description--left { text-align: left; }
+.desc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+.desc-text-col { min-width: 0; }
+.desc-image-col { min-width: 0; position: sticky; top: 80px; }
+.desc-inline-img { display: block; width: 100%; height: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+
+/* --- Features --- */
+.features-section { padding-bottom: 48px; }
+.features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.feature-card { display: flex; align-items: flex-start; gap: 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; transition: border-color var(--transition); }
+.feature-card:hover { border-color: rgba(139,121,255,0.3); }
+.feature-icon { flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--v3); border-radius: 8px; color: var(--v2); }
+.feature-text { font-size: 14px; color: var(--ink2); line-height: 1.55; padding-top: 4px; }
+
+/* --- Gallery --- */
+.gallery-section { padding-bottom: 48px; }
+.gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.gallery-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color var(--transition); }
+.gallery-item:hover { border-color: rgba(139,121,255,.3); }
+.gallery-img { display: block; width: 100%; height: auto; }
+
+/* --- FAQ --- */
+.faq-list { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding-top: 16px; }
+.faq-item { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg2); overflow: hidden; transition: border-color var(--transition); }
+.faq-item:hover { border-color: rgba(139,121,255,0.3); }
+.faq-item[open] { border-color: rgba(139,121,255,0.4); }
+.faq-question { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--ink); list-style: none; transition: color var(--transition); }
+.faq-question::-webkit-details-marker { display: none; }
+.faq-question:hover { color: var(--v2); }
+.faq-chevron { flex-shrink: 0; color: var(--ink3); transition: transform 0.2s ease; }
+.faq-item[open] .faq-chevron { transform: rotate(180deg); }
+.faq-answer { padding: 0 20px 16px; font-size: 14px; color: var(--ink2); line-height: 1.65; }
+
+/* --- Related posts --- */
+.related-posts-intro { font-size: 13px; color: var(--ink3); margin-bottom: 12px; }
+.related-posts-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.related-post-link { display: inline-flex; align-items: center; gap: 8px; color: var(--v2); text-decoration: none; font-size: 14px; padding: 8px 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); transition: border-color var(--transition), color var(--transition); }
+.related-post-link:hover { border-color: rgba(139,121,255,0.4); color: var(--v); }
+
+/* --- Bottom CTA --- */
+.bottom-cta-section { padding-top: 8px; }
+.bottom-cta-card { background: linear-gradient(135deg, var(--bg3) 0%, var(--bg2) 100%); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px 44px; }
+.bottom-cta-content { max-width: 560px; }
+.bottom-cta-title { font-family: var(--heading); font-size: 26px; font-weight: 700; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.02em; }
+.bottom-cta-desc { font-size: 14px; color: var(--ink2); margin-bottom: 24px; line-height: 1.6; }
+.bottom-cta-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.guarantee-trust { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink3); }
+
+/* --- Utility --- */
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* --- Responsive --- */
+@media (max-width: 1023px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+  .hero-visual-col { order: -1; }
+  .hero-cover { max-height: 360px; object-fit: cover; }
+}
+
+@media (max-width: 1023px) {
+  .desc-grid { grid-template-columns: 1fr; gap: 28px; }
+  .desc-image-col { position: static; }
+  .desc-inline-img { max-height: 400px; object-fit: cover; object-position: top; }
+}
+
+@media (max-width: 768px) {
+  .product-hero { padding: 32px 0 28px; }
+  .product-title { font-size: 28px; }
+  .product-tagline { font-size: 15px; }
+  .price-amount { font-size: 28px; }
+  .btn-lg { width: 100%; justify-content: center; }
+  .hero-actions { flex-direction: column; align-items: flex-start; }
+  .hero-cover { max-height: 260px; }
+  .highlights-strip { padding: 16px 0; margin-bottom: 32px; }
+  .highlights-grid { gap: 16px; flex-direction: column; }
+  .features-grid { grid-template-columns: 1fr; }
+  .bottom-cta-card { padding: 28px 24px; }
+  .bottom-cta-title { font-size: 22px; }
+  .bottom-cta-actions { flex-direction: column; }
+  .desc-inline-img { max-height: 280px; }
+}
+</style>

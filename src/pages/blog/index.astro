@@ -1,0 +1,70 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PostCard from '@/components/PostCard.astro';
+import { getAllPosts, getAllTags, tagClass } from '@/lib/blog';
+
+const posts = await getAllPosts();
+const tags = await getAllTags();
+
+const PAGE_SIZE = 9;
+const page = parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
+const totalPages = Math.ceil(posts.length / PAGE_SIZE);
+const pagePosts = posts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+---
+
+<BaseLayout
+  title="Blog"
+  description="Technical articles on AI agents, Python, Claude Code, ML, and web dev — written while building real products."
+>
+  <section class="blog-hero">
+    <div class="container">
+      <div class="section-label">// all posts</div>
+      <h1 class="blog-title">The Diary</h1>
+      <p class="blog-desc">
+        {posts.length} articles on AI agents, Python, Claude Code, machine learning, and web architecture.
+        Written while shipping real things.
+      </p>
+    </div>
+  </section>
+
+  <div class="tag-bar">
+    <div class="container">
+      <a href="/blog" class={`tag tag-default${!Astro.url.searchParams.get('tag') ? ' tag-active' : ''}`}>All</a>
+      {tags.map(t => (
+        <a href={`/blog/tag/${t.toLowerCase().replace(/\s+/g,'-')}`} class={`tag tag-${tagClass(t)}`}>{t}</a>
+      ))}
+    </div>
+  </div>
+
+  <div class="container blog-list">
+    {pagePosts.length > 0 ? (
+      <div class="posts-grid">
+        {pagePosts.map(post => <PostCard post={post} />)}
+      </div>
+    ) : (
+      <div class="empty-state">
+        <p>No posts yet. Check back soon!</p>
+      </div>
+    )}
+
+    {totalPages > 1 && (
+      <nav class="pagination" aria-label="Blog pagination">
+        {page > 1 && <a href={`/blog?page=${page - 1}`} aria-label="Previous page">←</a>}
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+          <a href={`/blog?page=${p}`} class={p === page ? 'active' : ''} aria-current={p === page ? 'page' : undefined}>{p}</a>
+        ))}
+        {page < totalPages && <a href={`/blog?page=${page + 1}`} aria-label="Next page">→</a>}
+      </nav>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+.blog-hero { padding: 56px 0 32px; }
+.blog-title { font-family: var(--heading); font-weight: 700; font-size: 42px; color: var(--ink); margin: 8px 0 12px; letter-spacing: -0.03em; }
+.blog-desc { color: var(--ink2); font-size: 15px; max-width: 560px; line-height: 1.6; }
+.tag-bar { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 14px 0; overflow-x: auto; }
+.tag-bar .container { display: flex; gap: 8px; flex-wrap: wrap; }
+.blog-list { padding-top: 32px; padding-bottom: 80px; }
+.empty-state { text-align: center; padding: 80px 0; color: var(--ink3); }
+</style>

@@ -1,0 +1,106 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="About"
+  description="Rachid is a solo developer, ERP consultant, and solopreneur based in Agadir. He builds AI agent systems, custom ERPs for SMBs, and digital products."
+>
+  <div class="about-page">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-main">
+          <div class="section-label">// who i am</div>
+          <h1 class="about-title">Rachid</h1>
+          <p class="about-subtitle">Solo developer · ERP consultant · Solopreneur<br/>Based in Agadir, Morocco</p>
+
+          <div class="prose about-prose">
+            <p>
+              I'm a solo developer who specialises in building <strong>customised internal business management systems</strong> — ERPs, dashboards, automation pipelines, and custom apps — for small and medium-sized businesses.
+            </p>
+            <p>
+              DevDiary.uk is where I document the journey: the agents I'm building, the architecture decisions I'm making, and the tools I ship. Everything here is written while building real things for real clients — not theoretical posts from a conference stage.
+            </p>
+            <h2>What I work with</h2>
+            <p>
+              My primary stack is <strong>Node.js/TypeScript, SQLite, Python, and vanilla HTML/JS</strong>. I run almost everything on Termux/Android with a Contabo VPS — a constraint that's shaped a lot of my architectural decisions (lightweight, portable, no native-dep nightmares).
+            </p>
+            <p>
+              On the AI side, I'm deep in the <strong>Claude Code / OpenCode / OpenClaw ecosystem</strong> — building agentic OS frameworks, multi-agent runtimes, and productised AI tools. My BAO Scaffold, Personal Claude OS, and clawd runtime all came from this work.
+            </p>
+            <h2>The consulting side</h2>
+            <p>
+              I work directly with SMB clients to build their internal systems from scratch using a 5-phase blueprint: Discovery → Audit → Design → Build → Delivery. My AI agent Arc automates much of the discovery and audit phases, so I can spend more time building the right thing.
+            </p>
+            <h2>The product side</h2>
+            <p>
+              Alongside client work I build and sell digital products on Gumroad — Claude Code configs, HTML dashboards, CRM tools, and agentic scaffolds. Everything is a one-time purchase, no subscription, and built on the same stack I use for client work.
+            </p>
+            <h2>Where to find me</h2>
+            <ul>
+              <li><a href="https://github.com/rachid" target="_blank" rel="noopener noreferrer">GitHub</a> — all the open-source work</li>
+              <li><a href="https://twitter.com/devdiary_uk" target="_blank" rel="noopener noreferrer">Twitter / X @devdiary_uk</a> — build-in-public updates</li>
+              <li><a href="https://gumroad.com" target="_blank" rel="noopener noreferrer">Gumroad</a> — digital products</li>
+              <li><a href="mailto:hello@devdiary.uk">hello@devdiary.uk</a> — for consulting enquiries</li>
+            </ul>
+          </div>
+        </div>
+
+        <aside class="about-sidebar">
+          <div class="profile-card">
+            <div class="profile-avatar" aria-label="Rachid's avatar">R</div>
+            <div class="profile-name">Rachid</div>
+            <div class="profile-location">📍 Agadir, Morocco</div>
+            <div class="profile-links">
+              <a href="https://github.com/rachid" target="_blank" rel="noopener noreferrer" class="profile-link">GitHub ↗</a>
+              <a href="https://twitter.com/devdiary_uk" target="_blank" rel="noopener noreferrer" class="profile-link">Twitter ↗</a>
+              <a href="mailto:hello@devdiary.uk" class="profile-link">Email ↗</a>
+            </div>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="sidebar-card-title">// primary stack</div>
+            <ul class="stack-list">
+              {['Node.js / TypeScript', 'Python', 'SQLite', 'Vanilla HTML/JS', 'Astro', 'React', 'Termux / Android', 'Contabo VPS'].map(s => (
+                <li><span class="stack-dot"></span>{s}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="sidebar-card-title">// currently building</div>
+            <ul class="building-list">
+              <li><span class="building-icon">🌐</span><span>DevDiary.uk (this site)</span></li>
+              <li><span class="building-icon">🤖</span><span>BAO Scaffold v2</span></li>
+              <li><span class="building-icon">📦</span><span>B2B Lead Intelligence Agent</span></li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+.about-page { padding: 56px 0 80px; }
+.about-grid { display: grid; grid-template-columns: 1fr 280px; gap: 56px; align-items: start; }
+.about-title { font-family: var(--heading); font-weight: 700; font-size: 48px; color: var(--ink); letter-spacing: -0.03em; margin-bottom: 8px; }
+.about-subtitle { font-size: 15px; color: var(--ink2); margin-bottom: 32px; line-height: 1.55; }
+.about-prose { max-width: 640px; }
+.profile-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-align: center; margin-bottom: 16px; }
+.profile-avatar { width: 68px; height: 68px; border-radius: 50%; background: linear-gradient(135deg, var(--v) 0%, var(--teal) 100%); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: #fff; margin: 0 auto 12px; }
+.profile-name { font-family: var(--heading); font-weight: 700; font-size: 20px; color: var(--ink); margin-bottom: 4px; }
+.profile-location { font-size: 13px; color: var(--ink3); margin-bottom: 16px; }
+.profile-links { display: flex; flex-direction: column; gap: 6px; }
+.profile-link { font-size: 13.5px; color: var(--v2); text-decoration: none; padding: 7px; border: 1px solid var(--border); border-radius: 7px; transition: all var(--transition); }
+.profile-link:hover { border-color: var(--border2); background: var(--bg3); }
+.sidebar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+.sidebar-card-title { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink3); margin-bottom: 14px; }
+.stack-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.stack-list li { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink2); }
+.stack-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--v); flex-shrink: 0; }
+.building-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.building-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; color: var(--ink2); }
+.building-icon { flex-shrink: 0; }
+@media (max-width: 800px) { .about-grid { grid-template-columns: 1fr; } .about-sidebar { order: -1; } }
+</style>

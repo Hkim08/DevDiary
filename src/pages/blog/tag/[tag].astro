@@ -1,0 +1,48 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PostCard from '@/components/PostCard.astro';
+import { getAllPosts, getAllTags, tagClass } from '@/lib/blog';
+import type { GetStaticPaths } from 'astro';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const allPosts = await getAllPosts();
+  const tags = await getAllTags();
+  return tags.map(tag => {
+    const slug = tag.toLowerCase().replace(/\s+/g, '-');
+    const filtered = allPosts.filter(p =>
+      p.data.tags.some(t => t.toLowerCase() === tag.toLowerCase())
+    );
+    return { params: { tag: slug }, props: { tag, posts: filtered } };
+  });
+};
+
+const { tag, posts } = Astro.props;
+---
+
+<BaseLayout title={`#${tag}`} description={`All DevDiary.uk articles tagged "${tag}" — ${posts.length} post${posts.length !== 1 ? 's' : ''}.`}>
+  <section class="tag-hero">
+    <div class="container">
+      <a href="/blog" class="back-link">← All posts</a>
+      <div class="tag-headline">
+        <span class={`tag tag-${tagClass(tag)}`} style="font-size:13px;padding:4px 12px">{tag}</span>
+        <h1>{posts.length} article{posts.length !== 1 ? 's' : ''}</h1>
+      </div>
+    </div>
+  </section>
+
+  <div class="container" style="padding-bottom:80px">
+    {posts.length > 0 ? (
+      <div class="posts-grid">{posts.map(post => <PostCard post={post} />)}</div>
+    ) : (
+      <p style="color:var(--ink3);text-align:center;padding:60px 0">No posts in this category yet.</p>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+.tag-hero { padding: 48px 0 32px; }
+.back-link { font-size: 13.5px; color: var(--ink3); text-decoration: none; display: inline-block; margin-bottom: 20px; transition: color var(--transition); }
+.back-link:hover { color: var(--ink2); }
+.tag-headline { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.tag-headline h1 { font-family: var(--heading); font-size: 32px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+</style>

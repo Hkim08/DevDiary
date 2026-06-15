@@ -1,0 +1,88 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PostCard from '@/components/PostCard.astro';
+import { getAllPosts } from '@/lib/blog';
+
+const allPosts = await getAllPosts();
+const tutorials = allPosts;
+
+const series = [
+  {
+    title: 'Build Multi-Agent Systems with Claude Code',
+    href: '/blog/tag/claude-code', icon: '🤖',
+    tags: ['claude-code', 'ai-agents'],
+    desc: 'From zero to a working agentic OS: SOUL files, phase gates, SQLite memory, and HTTP+SSE APIs.',
+  },
+  {
+    title: 'Python Automation for Freelancers',
+    href: '/blog/tag/python', icon: '🐍',
+    tags: ['python'],
+    desc: 'Scraping, scheduling, and shipping automation tools that clients actually pay for.',
+  },
+  {
+    title: 'Build an ERP from Scratch',
+    href: '/blog/tag/ai-agents', icon: '📊',
+    tags: ['web-dev'],
+    desc: 'Node.js + SQLite + vanilla JS: the SMB ERP stack that runs on a €5 VPS.',
+  },
+];
+---
+
+<BaseLayout title="Tutorials" description="Step-by-step guides on AI agents, Claude Code, Python automation, and web development — from a working developer.">
+  <section class="page-hero">
+    <div class="container">
+      <div class="section-label">// step-by-step guides</div>
+      <h1 class="page-title">Tutorials</h1>
+      <p class="page-desc">Practical, opinionated guides built from real client work and shipped products. No filler — just what actually works.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="series-heading" class="tutorials-section">
+    <div class="container">
+      <h2 id="series-heading" class="section-label" style="margin-bottom:20px">// series</h2>
+      <div class="series-grid">
+        {series.map(s => (
+          <a href={s.href} class="series-card">
+            <div class="series-icon">{s.icon}</div>
+            <div class="series-body">
+              <div class="series-meta">{s.tags.map(t => <span class={`tag tag-${t}`}>{t}</span>)}</div>
+              <div class="series-title">{s.title}</div>
+              <div class="series-desc">{s.desc}</div>
+            </div>
+            <span class="series-arrow">→</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <div class="container" style="padding-bottom:80px">
+    <h2 class="section-label" style="margin-bottom:20px">// individual guides</h2>
+    {tutorials.length > 0 ? (
+      <div class="posts-grid">{tutorials.map(post => <PostCard post={post} />)}</div>
+    ) : (
+      <div class="empty-state">
+        <p style="font-size:15px;color:var(--ink3);text-align:center;padding:64px 0">
+          Tutorials coming soon. <a href="/blog" style="color:var(--v2)">Browse the blog</a> in the meantime.
+        </p>
+      </div>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+.page-hero { padding: 56px 0 40px; }
+.page-title { font-family: var(--heading); font-weight: 700; font-size: 42px; color: var(--ink); margin: 8px 0 12px; letter-spacing: -0.03em; }
+.page-desc { color: var(--ink2); font-size: 15px; max-width: 560px; line-height: 1.6; }
+.series-grid { display: flex; flex-direction: column; gap: 12px; }
+.series-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; text-decoration: none; color: inherit; display: flex; align-items: flex-start; gap: 18px; transition: border-color var(--transition), transform var(--transition); }
+.series-card:hover { border-color: rgba(139,121,255,.3); transform: translateX(4px); }
+.series-icon { font-size: 28px; flex-shrink: 0; padding-top: 2px; }
+.series-body { flex: 1; }
+.series-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.series-title { font-family: var(--heading); font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 4px; letter-spacing: -0.02em; }
+.series-desc { font-size: 13.5px; color: var(--ink3); line-height: 1.55; }
+.series-arrow { font-size: 18px; color: var(--ink3); flex-shrink: 0; padding-top: 4px; transition: color var(--transition); }
+.series-card:hover .series-arrow { color: var(--v2); }
+.tutorials-section { padding-bottom: 48px; }
+</style>

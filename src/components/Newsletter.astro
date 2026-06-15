@@ -1,0 +1,82 @@
+---
+interface Props {
+  compact?: boolean;
+}
+const { compact = false } = Astro.props;
+---
+
+{compact ? (
+  <div class="newsletter-inline">
+    <h3>Get the Dev Diary Weekly</h3>
+    <p>What I shipped, what broke, what I learned. One honest email per week.</p>
+    <div class="nl-row">
+      <input type="email" class="nl-input" placeholder="you@email.com" aria-label="Email address" id="nl-email-compact" />
+      <button class="nl-btn" onclick="handleSubscribe('compact')">Subscribe →</button>
+    </div>
+    <p class="nl-feedback" id="nl-feedback-compact" aria-live="polite"></p>
+    <p class="nl-disclaimer">No spam · 400+ readers · Unsubscribe any time</p>
+  </div>
+) : (
+  <section class="nl-wrap" aria-labelledby="nl-heading">
+    <div class="nl-left">
+      <div class="nl-overline">// weekly dispatch</div>
+      <h2 id="nl-heading" class="nl-title">The Dev Diary<br>Weekly</h2>
+      <p class="nl-sub">What I shipped, what broke, what I learned. One honest email per week from a solo AI builder.</p>
+    </div>
+    <div class="nl-right">
+      <ul class="nl-perks">
+        <li><span class="nl-check" aria-hidden="true">✓</span>New articles &amp; tutorials, first</li>
+        <li><span class="nl-check" aria-hidden="true">✓</span>Behind-the-scenes build logs</li>
+        <li><span class="nl-check" aria-hidden="true">✓</span>Subscriber-only product discounts</li>
+      </ul>
+      <div class="nl-form">
+        <input type="email" class="nl-input" placeholder="your@email.com" aria-label="Email address" id="nl-email-full" />
+        <button class="btn-hero primary" style="white-space:nowrap;padding:9px 18px;font-size:13px;border:none" onclick="handleSubscribe('full')">Join free →</button>
+      </div>
+      <div class="nl-note">400+ readers · no spam · unsubscribe any time</div>
+    </div>
+  </section>
+)}
+
+<style>
+.nl-wrap { margin: 0 40px 40px; background: var(--bg2); border: 1px solid var(--border2); border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; }
+.nl-left { padding: 36px 40px; background: linear-gradient(135deg, rgba(139,121,255,.12) 0%, rgba(45,212,191,.06) 100%); border-right: 1px solid var(--border); }
+.nl-overline { font-size: 10px; font-family: var(--mono); color: var(--v2); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
+.nl-title { font-family: var(--heading); font-size: 22px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); line-height: 1.2; margin-bottom: 10px; }
+.nl-sub { font-size: 13px; color: var(--ink2); line-height: 1.6; }
+.nl-right { padding: 36px 40px; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+.nl-perks { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.nl-perks li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink2); }
+.nl-check { width: 18px; height: 18px; border-radius: 5px; background: var(--v3); border: 1px solid rgba(139,121,255,.3); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--v2); flex-shrink: 0; font-weight: 700; }
+.nl-form { display: flex; gap: 8px; }
+.nl-note { font-size: 11px; color: var(--ink3); }
+.nl-feedback { font-size: 13px; margin-top: 8px; }
+.nl-feedback--success { color: var(--teal); }
+.nl-feedback--error { color: var(--coral); }
+.nl-disclaimer { font-size: 11px; color: var(--ink3); margin-top: 6px; }
+.btn-hero.primary { background: var(--v); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13.5px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity var(--transition); display: inline-flex; align-items: center; gap: 6px; }
+.btn-hero.primary:hover { opacity: 0.85; }
+
+@media (max-width: 768px) {
+  .nl-wrap { grid-template-columns: 1fr; }
+  .nl-left { border-right: none; border-bottom: 1px solid var(--border); }
+  .nl-left, .nl-right { padding: 28px 24px; }
+}
+</style>
+
+<script>
+function handleSubscribe(ctx: string) {
+  const emailId = ctx === 'compact' ? 'nl-email-compact' : 'nl-email-full';
+  const feedbackId = ctx === 'compact' ? 'nl-feedback-compact' : 'nl-feedback-full';
+  const emailEl = document.getElementById(emailId) as HTMLInputElement;
+  const feedbackEl = document.getElementById(feedbackId);
+  const email = emailEl?.value.trim();
+  if (!email || !email.includes('@')) {
+    if (feedbackEl) { feedbackEl.textContent = 'Please enter a valid email address.'; feedbackEl.className = 'nl-feedback nl-feedback--error'; }
+    emailEl?.focus();
+    return;
+  }
+  if (feedbackEl) { feedbackEl.textContent = 'Thanks! Check your inbox for confirmation.'; feedbackEl.className = 'nl-feedback nl-feedback--success'; }
+  emailEl.value = '';
+}
+</script>

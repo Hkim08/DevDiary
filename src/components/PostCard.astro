@@ -1,0 +1,36 @@
+---
+import { tagClass, formatDate, estimateReadingTime } from '@/lib/blog';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+  featured?: boolean;
+}
+
+const { post, featured = false } = Astro.props;
+const { title, description, pubDate, tags, author } = post.data;
+const readingTime = estimateReadingTime(post.body);
+const primaryTag = tags[0] ?? 'general';
+---
+
+<a href={`/blog/${post.slug}`} class={`post-card${featured ? ' post-card--featured' : ''}`} aria-label={title}>
+  <div class="post-card-body">
+    <div class="post-card-meta">
+      <span class={`tag tag-${tagClass(primaryTag)}`}>{primaryTag}</span>
+      <span class="read-time">{readingTime} min read</span>
+    </div>
+    <h2 class="post-card-title">{title}</h2>
+    <p class="post-card-excerpt">{description}</p>
+  </div>
+  <div class="post-card-footer">
+    <div class="avatar" aria-hidden="true">R</div>
+    <span>{author}</span>
+    <span aria-hidden="true">·</span>
+    <time datetime={pubDate.toISOString()}>{formatDate(pubDate)}</time>
+  </div>
+</a>
+
+<style>
+.post-card--featured .post-card-title { font-size: 22px; }
+.post-card--featured .post-card-excerpt { -webkit-line-clamp: 4; }
+</style>

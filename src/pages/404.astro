@@ -1,0 +1,33 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="404 — Page not found" noindex>
+  <div class="not-found">
+    <div class="container">
+      <div class="nf-code" aria-hidden="true">
+        <span class="nf-comment">// error: route not found</span><br/>
+        <span class="nf-key">status</span>: <span class="nf-val">404</span><br/>
+        <span class="nf-key">path</span>: <span class="nf-val">"{Astro.url.pathname}"</span><br/>
+        <span class="nf-key">suggestion</span>: <span class="nf-val">"go home and try again"</span>
+      </div>
+      <h1 class="nf-title">404</h1>
+      <p class="nf-desc">This page doesn't exist. Deleted, moved, or never built — hard to say.</p>
+      <div class="nf-actions">
+        <a href="/" class="btn btn-primary">Back to home</a>
+        <a href="/blog" class="btn btn-ghost">Browse the blog</a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+.not-found { padding: 100px 0; text-align: center; min-height: 60vh; display: flex; align-items: center; }
+.nf-code { font-family: var(--mono); font-size: 13px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; display: inline-block; text-align: left; margin-bottom: 32px; line-height: 1.8; }
+.nf-comment { color: var(--ink3); }
+.nf-key { color: var(--v2); }
+.nf-val { color: var(--amber); }
+.nf-title { font-family: var(--mono); font-size: 80px; font-weight: 600; color: var(--ink); letter-spacing: -2px; margin-bottom: 12px; line-height: 1; }
+.nf-desc { color: var(--ink2); font-size: 16px; margin-bottom: 28px; }
+.nf-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+</style>

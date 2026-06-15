@@ -1,0 +1,210 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Newsletter from '@/components/Newsletter.astro';
+import { tagClass, formatDate, estimateReadingTime } from '@/lib/blog';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+  headings: { depth: number; slug: string; text: string }[];
+}
+
+const { post, headings } = Astro.props;
+const { title, description, pubDate, updatedDate, author, tags, ogImage, image, imageAlt } = post.data;
+const readingTime = estimateReadingTime(post.body);
+const h2s = headings.filter(h => h.depth === 2);
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  ogImage={ogImage}
+  ogType="article"
+  pubDate={pubDate}
+  updatedDate={updatedDate}
+  author={author}
+  tags={tags}
+>
+  <div id="reading-progress" aria-hidden="true"></div>
+
+  <article class="article-layout">
+    <div class="container">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/blog">Blog</a></li>
+          <li aria-current="page">{title}</li>
+        </ol>
+      </nav>
+
+      <header class="article-header">
+        <div class="article-meta">
+          {tags.map(tag => (
+            <a href={`/blog/tag/${tag.toLowerCase().replace(/\s+/g, '-')}`} class={`tag tag-${tagClass(tag)}`}>
+              {tag}
+            </a>
+          ))}
+          <span class="read-time">{readingTime} min read</span>
+        </div>
+
+        <h1 class="article-title">{title}</h1>
+        <p class="article-desc">{description}</p>
+
+        <div class="article-byline">
+          <div class="avatar avatar-lg" aria-hidden="true">R</div>
+          <div>
+            <div class="byline-name">{author}</div>
+            <div class="byline-date">
+              <time datetime={pubDate.toISOString()}>{formatDate(pubDate, true)}</time>
+              {updatedDate && (
+                <span> · Updated <time datetime={updatedDate.toISOString()}>{formatDate(updatedDate, true)}</time></span>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {image && (
+        <figure class="article-hero-img">
+          <img src={image} alt={imageAlt ?? ''} loading="eager" decoding="async" />
+        </figure>
+      )}
+
+      <div class="article-body">
+        {h2s.length > 2 && (
+          <aside class="article-toc" aria-label="Table of contents">
+            <nav class="toc">
+              <div class="toc-title">// table of contents</div>
+              <ol>
+                {h2s.map(h => (
+                  <li>
+                    <a href={`#${h.slug}`}>{h.text}</a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </aside>
+        )}
+
+        <div class="prose article-prose">
+          <slot />
+          <hr />
+          <Newsletter compact />
+        </div>
+      </div>
+
+      <footer class="article-footer">
+        <div class="article-tags">
+          <span class="text-muted text-mono" style="font-size:12px">TAGGED:</span>
+          {tags.map(tag => (
+            <a href={`/blog/tag/${tag.toLowerCase().replace(/\s+/g, '-')}`} class={`tag tag-${tagClass(tag)}`}>
+              {tag}
+            </a>
+          ))}
+        </div>
+        <div class="article-share">
+          <span class="text-muted" style="font-size:13px">Share:</span>
+          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(Astro.url.href)}`} target="_blank" rel="noopener noreferrer" class="share-btn">Twitter/X</a>
+          <button class="share-btn" id="copy-link-btn" onclick="copyLink()">Copy link</button>
+        </div>
+      </footer>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+.article-layout { padding: 48px 0 80px; }
+
+.breadcrumbs { margin-bottom: 24px; max-width: 960px; }
+.breadcrumbs ol { list-style: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--ink3); }
+.breadcrumbs li:not(:last-child)::after { content: '/'; margin-left: 8px; color: var(--ink3); opacity: 0.5; }
+.breadcrumbs a { color: var(--ink2); text-decoration: none; transition: color var(--transition); }
+.breadcrumbs a:hover { color: var(--v2); }
+.breadcrumbs [aria-current="page"] { color: var(--ink); font-weight: 500; }
+
+.article-header { max-width: 960px; margin: 0 auto 40px; }
+.article-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.article-title { font-family: var(--heading); font-weight: 700; font-size: clamp(28px, 4vw, 44px); color: var(--ink); line-height: 1.15; letter-spacing: -0.5px; margin-bottom: 16px; }
+.article-desc { font-size: 18px; color: var(--ink2); line-height: 1.6; margin-bottom: 24px; }
+.article-byline { display: flex; align-items: center; gap: 12px; }
+.byline-name { font-weight: 500; font-size: 15px; color: var(--ink); }
+.byline-date { font-size: 13px; color: var(--ink3); }
+
+.article-hero-img { max-width: 960px; margin: 0 auto 40px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); }
+.article-hero-img img { width: 100%; height: auto; display: block; }
+
+.article-body { max-width: 960px; margin: 0 auto; }
+
+.article-toc { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 40px; }
+
+.article-prose { max-width: none; }
+
+.article-footer { max-width: 960px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.article-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.article-share { display: flex; align-items: center; gap: 10px; }
+.share-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--ink2); font-size: 12px; padding: 5px 12px; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all var(--transition); font-family: var(--sans); }
+.share-btn:hover { color: var(--ink); border-color: var(--border2); }
+</style>
+
+<script>
+const bar = document.getElementById('reading-progress');
+const articleEl = document.querySelector('.article-layout');
+if (bar && articleEl) {
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        const { top, height } = articleEl.getBoundingClientRect();
+        const total = height - window.innerHeight;
+        const scrolled = Math.max(0, -top);
+        bar.style.width = `${Math.min(100, (scrolled / total) * 100)}%`;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+}
+
+const tocLinks = document.querySelectorAll('.toc a');
+if (tocLinks.length) {
+  const headings = [...document.querySelectorAll('.article-prose h2')];
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+        active?.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0% -60% 0%' });
+  headings.forEach(h => io.observe(h));
+}
+
+document.querySelectorAll('.prose pre').forEach(pre => {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'code-block-wrapper';
+  pre.parentNode?.insertBefore(wrapper, pre);
+  wrapper.appendChild(pre);
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'copy';
+  btn.onclick = async () => {
+    const code = pre.querySelector('code')?.innerText ?? '';
+    await navigator.clipboard.writeText(code);
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+  };
+  wrapper.appendChild(btn);
+});
+
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href);
+  const btn = document.getElementById('copy-link-btn');
+  if (btn) {
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy link'; }, 2000);
+  }
+}
+(window as any).copyLink = copyLink;
+</script>
