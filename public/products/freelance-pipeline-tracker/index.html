@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freelance Pipeline & Follow-Up Tracker — Freelance CRM Alternative</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0b0d;
+    --surface:   #111318;
+    --border:    #1e2129;
+    --border2:   #2a2f3a;
+    --amber:     #f5a623;
+    --green:     #2ecc71;
+    --teal:      #4ecdc4;
+    --red:       #e74c3c;
+    --blue:      #4a9eff;
+    --text:      #e8eaf0;
+    --muted:     #5a6278;
+    --muted2:    #3a4055;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-main: 'Syne', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-main); min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.4;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  /* HEADER */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px; display: flex; align-items: center;
+    justify-content: space-between; height: 64px;
+    background: var(--surface); position: sticky; top: 0; z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: var(--teal);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-text { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+  .logo-text span { color: var(--teal); }
+  .header-meta { font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 20px; }
+
+  /* HERO */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+    position: relative;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero-eyebrow span { color: var(--teal); }
+  .hero h1 {
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 800; letter-spacing: -0.04em;
+    line-height: 1.1; margin-bottom: 20px;
+  }
+  .hero h1 .hl {
+    background: linear-gradient(90deg, var(--teal) 0%, var(--blue) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 17px; color: var(--muted);
+    line-height: 1.7; max-width: 640px; margin: 0 auto 32px;
+  }
+
+  /* PRICE BLOCK */
+  .price-block {
+    display: flex; align-items: center; justify-content: center;
+    gap: 24px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 36px;
+    max-width: 640px; margin: 0 auto 40px;
+  }
+  .price-left { display: flex; align-items: baseline; gap: 12px; }
+  .price-amount { font-size: 42px; font-weight: 800; color: var(--teal); letter-spacing: -0.04em; }
+  .price-terms { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .price-terms strong { color: var(--teal); font-weight: 600; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 32px; border-radius: 10px; border: none;
+    background: var(--teal); color: #0a0b0d;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    text-decoration: none; cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
+  .price-guarantee { font-size: 12px; color: var(--muted); margin-top: 8px; text-align: center; }
+  .price-guarantee span { color: var(--amber); }
+
+  /* SECTIONS */
+  .section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+  .section:last-of-type { border-bottom: none; }
+  .section-eyebrow {
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .section-eyebrow::before { content: '// '; color: var(--teal); }
+  .section h2 {
+    font-size: 28px; font-weight: 700; letter-spacing: -0.03em;
+    margin-bottom: 16px; color: var(--text);
+  }
+  .section p {
+    font-size: 15px; color: var(--muted); line-height: 1.75;
+    max-width: 680px;
+  }
+  .section p strong { color: var(--text); font-weight: 600; }
+
+  /* FEATURES GRID */
+  .features-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-top: 32px;
+  }
+  .feature-card {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px;
+    transition: border-color 0.2s;
+  }
+  .feature-card:hover { border-color: rgba(78,205,196,0.3); }
+  .feature-icon {
+    flex-shrink: 0; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(78,205,196,0.1); border-radius: 8px;
+    color: var(--teal); font-size: 16px;
+  }
+  .feature-text { font-size: 14px; color: var(--text); line-height: 1.55; padding-top: 6px; }
+  .feature-desc { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+  /* INCLUSION LIST */
+  .inclusion-list { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .inclusion-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 16px 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .inclusion-check {
+    flex-shrink: 0; width: 22px; height: 22px;
+    background: rgba(78,205,196,0.15); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--teal); font-size: 12px; margin-top: 1px;
+  }
+  .inclusion-label { font-size: 14px; color: var(--text); font-weight: 600; }
+  .inclusion-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* FAQ */
+  .faq-list { max-width: 680px; margin-top: 24px; }
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 0;
+    cursor: pointer;
+  }
+  .faq-q {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15px; font-weight: 600; color: var(--text);
+    gap: 16px;
+  }
+  .faq-icon { font-size: 18px; color: var(--muted); transition: transform 0.2s; flex-shrink: 0; }
+  .faq-item.open .faq-icon { transform: rotate(45deg); }
+  .faq-a {
+    font-size: 14px; color: var(--muted); line-height: 1.7;
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding-top: 0;
+  }
+  .faq-item.open .faq-a {
+    max-height: 300px;
+    padding-top: 14px;
+  }
+
+  /* CTA FINAL */
+  .cta-final {
+    text-align: center; padding: 72px 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .cta-final h2 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+  .cta-final p { color: var(--muted); margin-bottom: 28px; }
+  .cta-final .price-block {
+    margin-bottom: 16px;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px; text-align: center;
+    font-size: 12px; color: var(--muted);
+  }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--teal); }
+
+  /* REVEAL ANIMATION */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 768px) {
+    .hero { padding: 48px 0 40px; }
+    .hero-sub { font-size: 15px; }
+    .price-block { flex-direction: column; text-align: center; padding: 24px; }
+    .price-left { flex-direction: column; align-items: center; gap: 4px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .section { padding: 48px 0; }
+    .section h2 { font-size: 24px; }
+    .btn-primary { width: 100%; justify-content: center; }
+    .header-meta { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <a href="https://devdiary.uk" class="logo">
+    <div class="logo-mark"></div>
+    <span class="logo-text">Dev<span>Diary</span></span>
+  </a>
+  <div class="header-meta">
+    <span>Digital Product</span>
+    <span>·</span>
+    <span>Instant Download</span>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow"><span>●</span> Pipeline & Follow-Up System</div>
+    <h1>Stop losing deals.<br><span class="hl">Close more without a CRM.</span></h1>
+    <p class="hero-sub">
+      The Freelance Pipeline & Follow-Up Tracker gives you a complete opportunity management system — from first contact to closed deal — without paying $50+/month for CRM software you barely use.
+    </p>
+
+    <div class="price-block">
+      <div class="price-left">
+        <div class="price-amount">$47</div>
+        <div class="price-terms">One-time payment · No subscription<br><strong>Instant download</strong> · Free lifetime updates</div>
+      </div>
+      <a href="https://ubix08.gumroad.com/l/freelance-pipeline-tracker" target="_blank" rel="noopener noreferrer" class="btn-primary">Buy on Gumroad →</a>
+    </div>
+    <div class="price-guarantee"><span>🛡</span> 30-day no-questions refund</div>
+  </div>
+</section>
+
+<!-- THE PROBLEM -->
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">The Problem</div>
+    <h2>You're losing pipeline because you don't track it.</h2>
+    <p>
+      Solo freelancers and consultants lose more revenue to <strong>forgotten follow-ups</strong> than to competition. You meet a prospect, send a proposal, then get busy. The deal goes cold. The prospect picks someone who stayed top-of-mind.
+    </p>
+    <p style="margin-top: 16px;">
+      CRMs are overkill — $50+/month for features you'll never use, with learning curves that eat your billable hours. So you use nothing. And your pipeline leaks.
+    </p>
+  </div>
+</section>
+
+<!-- THE SOLUTION -->
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">The Solution</div>
+    <h2>A pipeline system that works the way you do.</h2>
+    <p>
+      Not a CRM. A Notion-based pipeline tracker with Google Apps Script automation, 50 email templates, and a weekly review workflow — built for solo operators who refuse to pay for SaaS bloat.
+    </p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <div>
+          <div class="feature-text">5-Stage Pipeline</div>
+          <div class="feature-desc">Lead → Reach Out → Active → Proposal → Closed. Every deal has a home.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <div>
+          <div class="feature-text">Google Apps Script Automation</div>
+          <div class="feature-desc">Automated follow-up emails at configurable intervals. Set it and forget it.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✉️</div>
+        <div>
+          <div class="feature-text">50 Email Templates</div>
+          <div class="feature-desc">Cold outreach, follow-up sequences, proposals, closing — all battle-tested.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <div>
+          <div class="feature-text">Monday Morning Review</div>
+          <div class="feature-desc">Weekly deal review checklist so nothing goes cold. Start every week with clarity.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div>
+          <div class="feature-text">Lost Deal Analysis</div>
+          <div class="feature-desc">Track why you lose. Surface patterns. Compound your close rate over time.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <div>
+          <div class="feature-text">Rate Calculator</div>
+          <div class="feature-desc">Pricing tool to find your competitive rate based on market data.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT'S INSIDE -->
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">What's Included</div>
+    <h2>Everything you need to manage your pipeline — in one download.</h2>
+
+    <div class="inclusion-list">
+      <div class="inclusion-item">
+        <div class="inclusion-check">✓</div>
+        <div>
+          <div class="inclusion-label">Notion Pipeline Template</div>
+          <div class="inclusion-desc">Complete workspace with 5 pipeline stages, deal tracking, and contact management. Duplicate into your Notion and go.</div>
+        </div>
+      </div>
+      <div class="inclusion-item">
+        <div class="inclusion-check">✓</div>
+        <div>
+          <div class="inclusion-label">Google Apps Script Automation</div>
+          <div class="inclusion-desc">Automated email follow-up system. Configure intervals per pipeline stage. Runs on a schedule — 10-minute setup.</div>
+        </div>
+      </div>
+      <div class="inclusion-item">
+        <div class="inclusion-check">✓</div>
+        <div>
+          <div class="inclusion-label">50 Email Templates</div>
+          <div class="inclusion-desc">Cold outreach, follow-up sequences, proposal delivery, closing, and re-engagement. Plain text, ready to customize.</div>
+        </div>
+      </div>
+      <div class="inclusion-item">
+        <div class="inclusion-check">✓</div>
+        <div>
+          <div class="inclusion-label">Monday Review Checklist</div>
+          <div class="inclusion-desc">Structured weekly workflow: review your pipeline, prioritize actions, update deal stages, plan follow-ups.</div>
+        </div>
+      </div>
+      <div class="inclusion-item">
+        <div class="inclusion-check">✓</div>
+        <div>
+          <div class="inclusion-label">Lost Deal Analysis Template</div>
+          <div class="inclusion-desc">Capture why each deal was lost — price, timing, competitor, fit. Surface patterns to improve your close rate.</div>
+        </div>
+      </div>
+      <div class="inclusion-item">
+        <div class="inclusion-check">✓</div>
+        <div>
+          <div class="inclusion-label">Rate Calculator</div>
+          <div class="inclusion-desc">Bonus spreadsheet tool to calculate your competitive freelance rate based on experience, market, and niche.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">FAQ</div>
+    <h2>Frequently asked questions</h2>
+
+    <div class="faq-list">
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Do I need a Notion subscription? <span class="faq-icon">+</span></div>
+        <div class="faq-a">Yes. The tracker is built as a Notion template. The free Notion plan works fine for solo use.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">How does the Google Apps Script automation work? <span class="faq-icon">+</span></div>
+        <div class="faq-a">A script runs on a configurable schedule (daily, every 2 days, etc.) and sends follow-up emails based on pipeline stage. Setup takes about 10 minutes following the included guide.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Can I customize the email templates? <span class="faq-icon">+</span></div>
+        <div class="faq-a">Absolutely. Every template is plain text — edit them to match your voice. The 50 templates are starting points, not scripture.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">What format is the download? <span class="faq-icon">+</span></div>
+        <div class="faq-a">A ZIP file containing: Notion template link, Google Apps Script file, 50 email templates (markdown), Monday Review Checklist (PDF), Lost Deal Analysis Template, and Rate Calculator. Everything is plain text or PDF — no proprietary formats.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">What if I run into issues? <span class="faq-icon">+</span></div>
+        <div class="faq-a">Email me and I will help you get set up. All purchases include direct support.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-final">
+  <div class="container">
+    <h2>Start closing more deals today.</h2>
+    <p>One payment. No subscription. Everything you need to never lose a deal to forgetfulness again.</p>
+
+    <div class="price-block">
+      <div class="price-left">
+        <div class="price-amount">$47</div>
+        <div class="price-terms">One-time payment · No subscription<br><strong>Instant download</strong> · Free lifetime updates</div>
+      </div>
+      <a href="https://ubix08.gumroad.com/l/freelance-pipeline-tracker" target="_blank" rel="noopener noreferrer" class="btn-primary">Buy on Gumroad →</a>
+    </div>
+    <div class="price-guarantee"><span>🛡</span> 30-day no-questions refund</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p><a href="https://devdiary.uk">DevDiary.uk</a> — Built by <a href="https://x.com/0xrad1ant">@0xrad1ant</a></p>
+</footer>
+
+<script>
+function toggleFaq(el) {
+  el.classList.toggle('open');
+}
+
+// Reveal animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('visible');
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

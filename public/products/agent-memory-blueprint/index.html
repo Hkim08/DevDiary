@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Memory Blueprint — Stop Context Collapse in Your AI Agents</title>
+<meta name="description" content="The practitioner's complete system for eliminating context collapse in production AI agents. Decision framework, JSON schemas, 7 prompt templates, Python implementation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+/* ── TOKENS ──────────────────────────────────────────────────── */
+:root {
+  --ink:       #0A0D14;
+  --bg:        #0C1018;
+  --surface:   #141C2A;
+  --surface2:  #1A2438;
+  --card:      #1E2D42;
+  --teal:      #00E5C3;
+  --teal-dim:  #00997F;
+  --amber:     #F5A623;
+  --coral:     #FF5F56;
+  --text:      #C8D4EC;
+  --muted:     #6B7A9A;
+  --dim:       #2E3D5A;
+  --white:     #F0F6FF;
+  --code-bg:   #0F1620;
+  --code-txt:  #7EC8B0;
+  --radius:    8px;
+  --col:       680px;
+}
+
+/* ── BASE ────────────────────────────────────────────────────── */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--teal); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+img { display: block; max-width: 100%; }
+
+/* ── LAYOUT ──────────────────────────────────────────────────── */
+.wrap {
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── TOP BAR ─────────────────────────────────────────────────── */
+.topbar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--teal) 0%, var(--amber) 60%, var(--coral) 100%);
+}
+
+.nav {
+  padding: 20px 24px;
+  max-width: var(--col);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-brand {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.nav-brand span { color: var(--teal); }
+
+.nav-cta {
+  background: var(--teal);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  transition: opacity 0.15s;
+}
+.nav-cta:hover { opacity: 0.85; text-decoration: none; }
+
+/* ── HERO ────────────────────────────────────────────────────── */
+.hero {
+  padding: 80px 0 0;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 28px;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 1.5px;
+  background: var(--teal);
+}
+
+.hero h1 {
+  font-size: clamp(36px, 6vw, 58px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -1.5px;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--teal);
+}
+
+.hero-sub {
+  font-size: clamp(15px, 2vw, 18px);
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.65;
+  margin: 24px 0 0;
+  max-width: 560px;
+}
+
+/* ── DIAGNOSTIC WIDGET ───────────────────────────────────────── */
+.diag-wrap {
+  margin: 52px 0 0;
+  background: var(--surface);
+  border: 1px solid var(--dim);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.diag-header {
+  background: var(--surface2);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--dim);
+}
+
+.diag-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.diag-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.diag-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.diag-dots span:nth-child(1) { background: var(--coral); }
+.diag-dots span:nth-child(2) { background: var(--amber); }
+.diag-dots span:nth-child(3) { background: var(--teal); }
+
+.diag-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.diag-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--teal);
+  background: rgba(0,229,195,0.1);
+  border: 1px solid rgba(0,229,195,0.25);
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.diag-body {
+  padding: 32px 28px;
+}
+
+.diag-question {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--white);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.diag-question .q-num {
+  color: var(--teal);
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.diag-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.diag-opt {
+  background: var(--card);
+  border: 1px solid var(--dim);
+  border-radius: 6px;
+  padding: 11px 16px;
+  font-size: 13.5px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+}
+
+.diag-opt:hover {
+  border-color: var(--teal-dim);
+  background: rgba(0,229,195,0.05);
+}
+
+.diag-opt.selected {
+  border-color: var(--teal);
+  background: rgba(0,229,195,0.08);
+  color: var(--white);
+}
+
+.diag-result {
+  display: none;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 3px solid var(--teal);
+  background: rgba(0,229,195,0.06);
+  margin-top: 4px;
+}
+
+.diag-result.coral { border-color: var(--coral); background: rgba(255,95,86,0.06); }
+.diag-result.amber { border-color: var(--amber); background: rgba(245,166,35,0.06); }
+
+.diag-result-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 6px;
+}
+
+.diag-result.coral .diag-result-label { color: var(--coral); }
+.diag-result.amber .diag-result-label { color: var(--amber); }
+
+.diag-result-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.diag-result-desc {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.diag-result-fix {
+  font-size: 12.5px;
+  color: var(--teal);
+  font-weight: 600;
+}
+
+.diag-result.coral .diag-result-fix { color: var(--coral); }
+.diag-result.amber .diag-result-fix { color: var(--amber); }
+
+.diag-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.diag-progress-step {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--dim);
+  transition: background 0.3s;
+}
+.diag-progress-step.active { background: var(--teal); }
+
+.diag-reset {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  margin-top: 14px;
+  padding: 0;
+}
+.diag-reset:hover { color: var(--teal); }
+
+/* ── PRICE HERO ──────────────────────────────────────────────── */
+.price-block {
+  margin: 52px 0;
+  padding: 36px;
+  background: var(--surface);
+  border: 1px solid var(--dim);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.price-left {}
+
+.price-amount {
+  font-size: 56px;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.price-terms {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.price-terms strong { color: var(--teal); font-weight: 600; }
+
+.price-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: var(--teal);
+  color: var(--ink);
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 16px 36px;
+  border-radius: 6px;
+  letter-spacing: 0.2px;
+  transition: opacity 0.15s, transform 0.1s;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.price-guarantee {
+  font-size: 11.5px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.price-guarantee span { color: var(--amber); }
+
+.price-includes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px solid var(--dim);
+  padding: 4px 11px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+/* ── SECTION BASE ────────────────────────────────────────────── */
+.section {
+  padding: 72px 0;
+  border-top: 1px solid var(--dim);
+}
+
+.section-eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-eyebrow::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 1.5px;
+  background: var(--teal);
+}
+
+.section h2 {
+  font-size: clamp(22px, 3.5vw, 32px);
+  font-weight: 800;
+  color: var(--white);
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  margin-bottom: 20px;
+}
+
+.section p {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.75;
+  margin-bottom: 16px;
+}
+
+.section p strong { color: var(--text); font-weight: 600; }
+
+/* ── SIGNATURES ──────────────────────────────────────────────── */
+.sigs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 32px 0;
+}
+
+@media (max-width: 580px) { .sigs { grid-template-columns: 1fr; } }
+
+.sig-card {
+  background: var(--surface);
+  border: 1px solid var(--dim);
+  border-radius: var(--radius);
+  padding: 20px;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.sig-card.visible { opacity: 1; transform: translateY(0); }
+
+.sig-card:nth-child(2) { transition-delay: 0.08s; }
+.sig-card:nth-child(3) { transition-delay: 0.16s; }
+.sig-card:nth-child(4) { transition-delay: 0.24s; }
+
+.sig-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.sig-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sig-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.sig-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.sig-desc {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.sig-tell {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dim);
+  font-size: 11.5px;
+  font-family: 'Fira Code', monospace;
+  color: var(--code-txt);
+}
+
+/* ── WHAT YOU GET ────────────────────────────────────────────── */
+.bundle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 32px 0;
+}
+
+@media (max-width: 520px) { .bundle { grid-template-columns: 1fr; } }
+
+.bundle-card {
+  background: var(--surface);
+  border: 1px solid var(--dim);
+  border-radius: var(--radius);
+  padding: 22px;
+  position: relative;
+}
+
+.bundle-card.featured {
+  border-color: rgba(0,229,195,0.35);
+  background: rgba(0,229,195,0.04);
+}
+
+.bundle-icon {
+  font-size: 26px;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.bundle-card h4 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 7px;
+}
+
+.bundle-card p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.bundle-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--teal);
+  border: 1px solid rgba(0,229,195,0.35);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+/* ── TOC ─────────────────────────────────────────────────────── */
+.toc {
+  margin: 28px 0;
+  border: 1px solid var(--dim);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.toc-part {
+  padding: 10px 20px;
+  background: var(--surface2);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--teal);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--dim);
+}
+
+.toc-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--dim);
+  transition: background 0.12s;
+}
+
+.toc-entry:last-child { border-bottom: none; }
+.toc-entry:hover { background: rgba(255,255,255,0.02); }
+
+.toc-num {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.toc-title {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ── CODE PREVIEW ────────────────────────────────────────────── */
+.code-preview {
+  margin: 28px 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--dim);
+}
+
+.code-bar {
+  background: var(--surface2);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0,229,195,0.3);
+}
+
+.code-bar-dots {
+  display: flex;
+  gap: 6px;
+}
+.code-bar-dots span {
+  width: 10px; height: 10px; border-radius: 50%;
+}
+.code-bar-dots span:nth-child(1) { background: var(--coral); }
+.code-bar-dots span:nth-child(2) { background: var(--amber); }
+.code-bar-dots span:nth-child(3) { background: var(--teal); }
+
+.code-bar-label {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.code-body {
+  background: var(--code-bg);
+  padding: 20px 20px;
+  overflow-x: auto;
+}
+
+.code-body pre {
+  font-family: 'Fira Code', monospace;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--code-txt);
+  margin: 0;
+  white-space: pre;
+}
+
+.code-body .kw  { color: var(--amber); }
+.code-body .cm  { color: var(--muted); font-style: italic; }
+.code-body .str { color: #98D4A0; }
+.code-body .fn  { color: #7EB8D4; }
+.code-body .pn  { color: var(--text); }
+
+/* ── STRATEGY GRID ───────────────────────────────────────────── */
+.strategies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 28px 0;
+}
+
+.strategy {
+  background: var(--surface);
+  border: 1px solid var(--dim);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.strategy-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(0,229,195,0.1);
+  border: 1px solid rgba(0,229,195,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--teal);
+  flex-shrink: 0;
+}
+
+.strategy-body {}
+.strategy-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+.strategy-desc {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.strategy-when {
+  font-size: 11px;
+  color: var(--amber);
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+/* ── AP CARDS ────────────────────────────────────────────────── */
+.aps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 24px 0;
+  border: 1px solid var(--dim);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ap {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--dim);
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.ap:last-child { border-bottom: none; }
+.ap:hover { background: rgba(255,95,86,0.03); }
+
+.ap-id {
+  font-family: 'Fira Code', monospace;
+  font-size: 10px;
+  color: var(--coral);
+  font-weight: 500;
+  flex-shrink: 0;
+  padding-top: 2px;
+  width: 38px;
+}
+
+.ap-body {}
+.ap-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 3px;
+}
+.ap-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.ap-fix {
+  font-size: 11.5px;
+  color: var(--teal);
+  margin-top: 5px;
+  font-weight: 600;
+}
+
+/* ── FOR WHO ─────────────────────────────────────────────────── */
+.for-who {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 28px 0;
+}
+
+.who-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--dim);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+}
+
+.who-check {
+  color: var(--teal);
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.who-text { color: var(--text); line-height: 1.5; }
+.who-text strong { color: var(--white); font-weight: 600; }
+
+.not-box {
+  background: rgba(255,95,86,0.05);
+  border: 1px solid rgba(255,95,86,0.15);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin: 20px 0;
+}
+
+.not-box-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--coral);
+  margin-bottom: 10px;
+}
+
+.not-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.not-list li {
+  font-size: 13px;
+  color: var(--muted);
+  padding-left: 18px;
+  position: relative;
+}
+.not-list li::before {
+  content: '✕';
+  position: absolute;
+  left: 0;
+  color: var(--coral);
+  font-size: 10px;
+  top: 2px;
+}
+
+/* ── DIFFERENTIATION ─────────────────────────────────────────── */
+.diff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.diff-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.diff-arrow {
+  color: var(--teal);
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.diff-text {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.diff-text strong { color: var(--white); font-weight: 600; }
+
+/* ── MATRIX TABLE ────────────────────────────────────────────── */
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 20px 0;
+  border: 1px solid var(--dim);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.matrix thead tr {
+  background: var(--surface2);
+}
+
+.matrix th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--teal);
+  border-bottom: 1px solid rgba(0,229,195,0.2);
+}
+
+.matrix td {
+  padding: 9px 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--dim);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.matrix tbody tr:last-child td { border-bottom: none; }
+.matrix tbody tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.matrix tbody tr:hover td { background: rgba(0,229,195,0.04); }
+
+.matrix td strong { color: var(--teal); font-weight: 600; }
+
+/* ── AUTHOR ──────────────────────────────────────────────────── */
+.author {
+  background: var(--surface);
+  border: 1px solid var(--dim);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+}
+
+.author-av {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--ink);
+  flex-shrink: 0;
+  letter-spacing: -1px;
+}
+
+.author-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 3px;
+}
+
+.author-role {
+  font-size: 11.5px;
+  color: var(--teal);
+  font-weight: 600;
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+
+.author-bio {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* ── FAQ ─────────────────────────────────────────────────────── */
+.faq { display: flex; flex-direction: column; gap: 0; }
+
+.faq-item {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--dim);
+  cursor: pointer;
+}
+
+.faq-item:first-child { border-top: 1px solid var(--dim); }
+
+.faq-q {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--white);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  user-select: none;
+}
+
+.faq-icon {
+  color: var(--teal);
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  font-weight: 300;
+}
+
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+
+.faq-a {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.7;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, margin-top 0.2s;
+}
+
+.faq-item.open .faq-a {
+  max-height: 400px;
+  margin-top: 12px;
+}
+
+/* ── GUARANTEE ───────────────────────────────────────────────── */
+.guarantee {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 22px 24px;
+  background: rgba(245,166,35,0.05);
+  border: 1px solid rgba(245,166,35,0.2);
+  border-radius: var(--radius);
+  margin: 32px 0;
+}
+
+.guarantee-icon { font-size: 30px; flex-shrink: 0; }
+.guarantee-title { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 5px; }
+.guarantee-text { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+/* ── FINAL CTA ───────────────────────────────────────────────── */
+.cta-final {
+  padding: 100px 0 80px;
+  text-align: center;
+  border-top: 1px solid var(--dim);
+}
+
+.cta-final h2 {
+  font-size: clamp(26px, 4vw, 40px);
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+  line-height: 1.15;
+}
+
+.cta-final p {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 36px;
+}
+
+.cta-final .price-includes {
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* ── FOOTER ──────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--dim);
+  padding: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+footer a { color: var(--muted); }
+footer a:hover { color: var(--teal); }
+
+/* ── SMOOTH SCROLL REVEAL ────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .sig-card { opacity: 1; transform: none; transition: none; }
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .price-block { flex-direction: column; align-items: stretch; }
+  .price-right { align-items: stretch; }
+  .btn-primary { text-align: center; }
+  .price-guarantee { text-align: left; }
+  .author { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"></div>
+
+<nav>
+  <div class="nav">
+    <div class="nav-brand">DevDiary<span>.uk</span> × OpenClaw</div>
+    <a href="#buy" class="nav-cta">Get the Blueprint →</a>
+  </div>
+</nav>
+
+<!-- ══ HERO ══════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow">Digital Product</div>
+
+    <h1>Your AI agent<br>has a memory<br><em>architecture problem.</em></h1>
+
+    <p class="hero-sub">
+      Not a model problem. Not a prompt problem. Every LLM forgets everything between calls. If you haven't built the system that manages what goes in the context window, you're shipping an agent that will fail silently — and you won't know until a user complains.
+    </p>
+
+    <!-- DIAGNOSTIC WIDGET -->
+    <div class="diag-wrap">
+      <div class="diag-header">
+        <div class="diag-header-left">
+          <div class="diag-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="diag-title">Context Collapse Diagnostic</div>
+        </div>
+        <div class="diag-badge">Interactive</div>
+      </div>
+
+      <div class="diag-body">
+        <div class="diag-progress">
+          <div class="diag-progress-step active" id="prog-1"></div>
+          <div class="diag-progress-step" id="prog-2"></div>
+        </div>
+
+        <!-- Q1 -->
+        <div id="q1">
+          <div class="diag-question">
+            <span class="q-num">Q1 / 2</span>
+            What does your agent do when a session runs long?
+          </div>
+          <div class="diag-options">
+            <button class="diag-opt" onclick="selectQ1('amnesiac')">It starts asking the user to repeat things they already said</button>
+            <button class="diag-opt" onclick="selectQ1('confab')">It confidently references decisions or facts that were never discussed</button>
+            <button class="diag-opt" onclick="selectQ1('loop')">It repeats the same action or question multiple times in a row</button>
+            <button class="diag-opt" onclick="selectQ1('none')">It seems fine — but I'm worried about what I haven't caught yet</button>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div id="q2" style="display:none;">
+          <div class="diag-question">
+            <span class="q-num">Q2 / 2</span>
+            How long does a typical session run?
+          </div>
+          <div class="diag-options">
+            <button class="diag-opt" onclick="selectQ2('short')">Under 10 turns — usually a quick task</button>
+            <button class="diag-opt" onclick="selectQ2('medium')">10–30 turns — a real workflow</button>
+            <button class="diag-opt" onclick="selectQ2('long')">30+ turns — or multiple sessions with the same user</button>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div id="result-amnesiac" class="diag-result coral" style="display:none;">
+          <div class="diag-result-label">Signature A Detected</div>
+          <div class="diag-result-name">The Amnesiac</div>
+          <div class="diag-result-desc">Your agent is dropping prior turns to stay within the context window — with no summarization to preserve what was lost. The semantic payload is simply gone. The model knows nothing before the cutoff point.</div>
+          <div class="diag-result-fix">Fix: Progressive Summarization (PT-02) + Structured State (Tier 2 schema). Both are in the Blueprint with working implementations.</div>
+        </div>
+
+        <div id="result-confab" class="diag-result coral" style="display:none;">
+          <div class="diag-result-label">Signature B Detected</div>
+          <div class="diag-result-name">The Confabulator</div>
+          <div class="diag-result-desc">Context gaps in your window are being filled by the model's inference instead of actual user input. The agent sounds confident but is hallucinating continuity. This is the most expensive failure mode — users trust it and act on wrong output.</div>
+          <div class="diag-result-fix">Fix: Verified facts tracking + PT-07 Recovery Prompt. The Blueprint's verified_facts_list pattern specifically breaks this loop.</div>
+        </div>
+
+        <div id="result-loop" class="diag-result amber" style="display:none;">
+          <div class="diag-result-label">Signature C Detected</div>
+          <div class="diag-result-name">The Loop</div>
+          <div class="diag-result-desc">Your agent has no working memory of what it has already attempted. Each call starts with no knowledge of prior tool calls or decisions. It keeps trying the same thing because nothing tells it that it already tried.</div>
+          <div class="diag-result-fix">Fix: Structured State with PT-03 State Update Instruction. The context_manager.py in the Blueprint handles this with automatic state parsing.</div>
+        </div>
+
+        <div id="result-short" class="diag-result" style="display:none;">
+          <div class="diag-result-label">Risk: Low (for now)</div>
+          <div class="diag-result-name">You're not hitting it yet — but you will.</div>
+          <div class="diag-result-desc">Short single-session tasks rarely surface context collapse. But the moment you add more steps, a persona, cross-session memory, or a second agent, the failure appears. The Blueprint gives you the architecture before you need the recovery.</div>
+          <div class="diag-result-fix">Start with Tier 1 schema + PT-01. Takes 20 minutes to implement. Protects you from all four collapse signatures as you scale.</div>
+        </div>
+
+        <div id="result-preempt" class="diag-result" style="display:none;">
+          <div class="diag-result-label">Risk: Real</div>
+          <div class="diag-result-name">You're in the danger zone without knowing it.</div>
+          <div class="diag-result-desc">Sessions over 10 turns without active context management have a high collapse probability. You may not see Signature A, B, or C yet — but the architecture is unsound and the failure is coming with load or session length.</div>
+          <div class="diag-result-fix">Implement Tier 2 schema + compression trigger now, before the first production incident. It takes one session to set up.</div>
+        </div>
+
+        <button class="diag-reset" id="diag-reset" onclick="resetDiag()">← Start over</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ PRICE (ABOVE FOLD) ════════════════════════════════════════ -->
+<div class="wrap" id="buy">
+  <div class="price-block reveal">
+    <div class="price-left">
+      <div class="price-amount">$79</div>
+      <div class="price-terms">One-time payment · No subscription<br><strong>Instant download</strong> · Free lifetime updates</div>
+      <div class="price-includes">
+        <span class="pill">PDF Guide</span>
+        <span class="pill">Python Implementation</span>
+        <span class="pill">JSON Schemas</span>
+        <span class="pill">7 Prompt Templates</span>
+        <span class="pill">Checklist</span>
+      </div>
+    </div>
+    <div class="price-right">
+      <a href="https://ubix08.gumroad.com/l/agent-memory-blueprint" class="btn-primary">Get the Blueprint →</a>
+      <div class="price-guarantee"><span>🛡</span> 30-day no-questions refund</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ THE PROBLEM ═══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">The Problem</div>
+    <h2 class="reveal">Context collapse is the silent killer of production AI agents.</h2>
+
+    <p class="reveal">Every LLM processes a fixed context window on each API call. <strong>Nothing persists automatically between calls.</strong> By call #30, if you haven't actively managed what enters the window, your agent is operating completely blind — generating responses based on assumptions instead of facts, repeating actions it already took, ignoring the constraints you defined at the start.</p>
+
+    <p class="reveal">This is not a Claude problem. Not a GPT-4o problem. Not a Gemini problem. It is a structural property of how every large language model works, and it will catch every builder who hasn't built the architecture to manage it.</p>
+
+    <p class="reveal">It presents in four recognizable patterns:</p>
+
+    <div class="sigs">
+      <div class="sig-card">
+        <div class="sig-card-top">
+          <div class="sig-dot" style="background:var(--coral)"></div>
+          <div class="sig-label" style="color:var(--coral)">Signature A</div>
+        </div>
+        <div class="sig-name">The Amnesiac</div>
+        <div class="sig-desc">Agent asks the user to repeat information already provided mid-task. Prior turns dropped from the window with no summarization.</div>
+        <div class="sig-tell">→ "Could you remind me what your goal was?"</div>
+      </div>
+
+      <div class="sig-card">
+        <div class="sig-card-top">
+          <div class="sig-dot" style="background:var(--coral)"></div>
+          <div class="sig-label" style="color:var(--coral)">Signature B</div>
+        </div>
+        <div class="sig-name">The Confabulator</div>
+        <div class="sig-desc">Agent references decisions, names, or facts that were never provided. Context gaps filled with confident hallucination.</div>
+        <div class="sig-tell">→ References "the approach we agreed on" (you never agreed)</div>
+      </div>
+
+      <div class="sig-card">
+        <div class="sig-card-top">
+          <div class="sig-dot" style="background:var(--amber)"></div>
+          <div class="sig-label" style="color:var(--amber)">Signature C</div>
+        </div>
+        <div class="sig-name">The Loop</div>
+        <div class="sig-desc">Same tool call repeated 3+ times with no state change. No working memory tracking what has already been attempted.</div>
+        <div class="sig-tell">→ Calls search_docs() identically for the 4th time</div>
+      </div>
+
+      <div class="sig-card">
+        <div class="sig-card-top">
+          <div class="sig-dot" style="background:var(--amber)"></div>
+          <div class="sig-label" style="color:var(--amber)">Signature D</div>
+        </div>
+        <div class="sig-name">The Identity Drift</div>
+        <div class="sig-desc">Named-persona agent stops following its role constraints after 20+ turns. System prompt evicted from the window.</div>
+        <div class="sig-tell">→ "Rex the analyst" becomes generic helpful assistant</div>
+      </div>
+    </div>
+
+    <p class="reveal">500 daily sessions at a 15% collapse rate is 75 failures a day. At even a 10% refund conversion, that's 7–8 refunds before you account for churn. <strong>Fix the architecture once. It saves continuously.</strong></p>
+  </div>
+</section>
+
+<!-- ══ THE SOLUTION ══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">The Solution</div>
+    <h2 class="reveal">Five strategies. One framework.<br>Zero ambiguity.</h2>
+
+    <p class="reveal">The Blueprint maps every context management approach — from a 10-line sliding window to a full episodic memory system — to a decision framework that tells you exactly which one fits your situation.</p>
+
+    <div class="strategies reveal">
+      <div class="strategy">
+        <div class="strategy-num">01</div>
+        <div class="strategy-body">
+          <div class="strategy-name">Sliding Window</div>
+          <div class="strategy-desc">Keep the N most recent turns. Simplest to implement. Right for tasks under 10 turns where early context is non-critical.</div>
+          <div class="strategy-when">⚠  Breaks when: session exceeds 20 turns or early instructions are critical</div>
+        </div>
+      </div>
+      <div class="strategy">
+        <div class="strategy-num">02</div>
+        <div class="strategy-body">
+          <div class="strategy-name">Progressive Summarization</div>
+          <div class="strategy-desc">Compress older turns into a dense narrative on a trigger cadence. Preserves semantic content at a fraction of the token cost.</div>
+          <div class="strategy-when">⚠  Breaks when: 5+ compression cycles degrade precision below usable threshold</div>
+        </div>
+      </div>
+      <div class="strategy">
+        <div class="strategy-num">03</div>
+        <div class="strategy-body">
+          <div class="strategy-name">Structured State</div>
+          <div class="strategy-desc">Maintain a typed JSON state object updated after every turn. Model reads state, acts, updates state. Explicit and auditable.</div>
+          <div class="strategy-when">⚠  Breaks when: state schema grows unbounded and model starts skipping fields</div>
+        </div>
+      </div>
+      <div class="strategy">
+        <div class="strategy-num">04</div>
+        <div class="strategy-body">
+          <div class="strategy-name">External Retrieval (RAG)</div>
+          <div class="strategy-desc">Store everything externally. Retrieve only semantically relevant chunks per call. Required for knowledge-heavy or multi-session agents.</div>
+          <div class="strategy-when">⚠  Breaks when: retrieval quality degrades without a reranking step</div>
+        </div>
+      </div>
+      <div class="strategy">
+        <div class="strategy-num">05</div>
+        <div class="strategy-body">
+          <div class="strategy-name">Episodic Memory</div>
+          <div class="strategy-desc">Persist structured episode records between sessions. Load the 3 most relevant at session start. Enables genuine cross-session coherence.</div>
+          <div class="strategy-when">⚠  Breaks when: no pruning strategy — episode volume and retrieval latency grow unbounded</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="reveal">The Blueprint's decision framework answers four questions about your agent and maps the answers directly to a recommended strategy — no guesswork.</p>
+
+    <div class="reveal">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Session Length</th>
+            <th>Cross-Session?</th>
+            <th>Task Type</th>
+            <th>Strategy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>&lt; 10 turns</td><td>No</td><td>Any</td><td><strong>Sliding Window</strong></td></tr>
+          <tr><td>10–30 turns</td><td>No</td><td>Task-oriented</td><td><strong>Structured State</strong></td></tr>
+          <tr><td>10–30 turns</td><td>No</td><td>Conversational</td><td><strong>Prog. Summarization</strong></td></tr>
+          <tr><td>30+ turns</td><td>No</td><td>Any</td><td><strong>Structured State</strong></td></tr>
+          <tr><td>Any</td><td>Yes</td><td>Task-oriented</td><td><strong>Struct. State + Episodic</strong></td></tr>
+          <tr><td>Any</td><td>Yes</td><td>Any + Domain Knowledge</td><td><strong>Episodic + RAG</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══ WHAT YOU GET ═══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">What's Inside</div>
+    <h2 class="reveal">A complete system.<br>Not another tutorial.</h2>
+
+    <p class="reveal">The PDF is the reference. The templates, schemas, and code are what you actually deploy. Everything is production-tested against Claude Sonnet, GPT-4o, and Gemini 1.5 Pro.</p>
+
+    <div class="bundle reveal">
+      <div class="bundle-card featured">
+        <div class="bundle-tag">Core</div>
+        <div class="bundle-icon">📘</div>
+        <h4>26-Page PDF Reference Guide</h4>
+        <p>Four parts: The Problem → Architecture Map → Implementation Templates → Anti-Pattern Catalog. Typeset in Poppins + Liberation Mono with full dark design. Dense. Readable. Worth rereading.</p>
+      </div>
+      <div class="bundle-card featured">
+        <div class="bundle-tag">Deploy</div>
+        <div class="bundle-icon">🐍</div>
+        <h4>context_manager.py</h4>
+        <p>300-line Python class. Auto-compression trigger, structured state tracking, identity anchoring, multi-agent handoff payloads. Fully commented. Run <code style="font-family:'Fira Code',monospace;font-size:11px;color:var(--code-txt)">python3 context_manager.py</code> for a live demo.</p>
+      </div>
+      <div class="bundle-card">
+        <div class="bundle-icon">🗂</div>
+        <h4>4 JSON Context Schemas</h4>
+        <p>Tier 1 (minimal) through Tier 4 (multi-agent orchestrator). Decision guide embedded. Copy the tier that matches your situation and adapt.</p>
+      </div>
+      <div class="bundle-card">
+        <div class="bundle-icon">📋</div>
+        <h4>7 Production Prompt Templates</h4>
+        <p>PT-01 through PT-07. Session init, compression, state update, episodic injection, handoff brief, persona anchor, failure recovery. Each includes usage notes, fill-in slots, and a GOTCHA.</p>
+      </div>
+      <div class="bundle-card">
+        <div class="bundle-icon">✅</div>
+        <h4>Pre-Deployment Checklist</h4>
+        <p>40+ items across 7 categories: context window, state management, persona, multi-agent, cross-session memory, failure detection, production observability.</p>
+      </div>
+      <div class="bundle-card">
+        <div class="bundle-icon">🔥</div>
+        <h4>Anti-Pattern Catalog</h4>
+        <p>The 10 things builders do that guarantee collapse — AP-01 through AP-10 — each with an observable signal and a specific fix that maps to the templates.</p>
+      </div>
+    </div>
+
+    <!-- TABLE OF CONTENTS -->
+    <div class="toc reveal">
+      <div class="toc-part">Part 1 — The Collapse Problem</div>
+      <div class="toc-entry"><span class="toc-num">1.1</span><span class="toc-title">What Context Collapse Actually Is</span></div>
+      <div class="toc-entry"><span class="toc-num">1.2</span><span class="toc-title">The Four Collapse Signatures (A / B / C / D)</span></div>
+      <div class="toc-entry"><span class="toc-num">1.3</span><span class="toc-title">What It Costs You and Your Users</span></div>
+
+      <div class="toc-part">Part 2 — The Architecture Map</div>
+      <div class="toc-entry"><span class="toc-num">2.1</span><span class="toc-title">Context Management Taxonomy (5 strategies)</span></div>
+      <div class="toc-entry"><span class="toc-num">2.2</span><span class="toc-title">When Each Strategy Breaks</span></div>
+      <div class="toc-entry"><span class="toc-num">2.3</span><span class="toc-title">The Decision Framework (4 questions)</span></div>
+      <div class="toc-entry"><span class="toc-num">2.4</span><span class="toc-title">Strategy Selection Matrix</span></div>
+
+      <div class="toc-part">Part 3 — Implementation Templates</div>
+      <div class="toc-entry"><span class="toc-num">3.1</span><span class="toc-title">JSON Context Payload Schemas — Tiers 1 through 4</span></div>
+      <div class="toc-entry"><span class="toc-num">3.2</span><span class="toc-title">Prompt Templates PT-01 through PT-07 with GOTCHA notes</span></div>
+      <div class="toc-entry"><span class="toc-num">3.3</span><span class="toc-title">context_manager.py — Full Reference Implementation</span></div>
+      <div class="toc-entry"><span class="toc-num">3.4</span><span class="toc-title">Multi-Agent Session Handoff Pattern</span></div>
+
+      <div class="toc-part">Part 4 — Anti-Patterns & Failure Catalog</div>
+      <div class="toc-entry"><span class="toc-num">4.1</span><span class="toc-title">The 10 Anti-Patterns (AP-01 through AP-10)</span></div>
+      <div class="toc-entry"><span class="toc-num">4.2</span><span class="toc-title">Failure Mode Identification Lookup Table</span></div>
+      <div class="toc-entry"><span class="toc-num">4.3</span><span class="toc-title">Recovery Playbooks A, B, and C</span></div>
+
+      <div class="toc-part">Appendix — Quick Reference</div>
+      <div class="toc-entry"><span class="toc-num">B</span><span class="toc-title">Token Budget Cheat Sheet by component</span></div>
+      <div class="toc-entry"><span class="toc-num">C</span><span class="toc-title">Pre-Deployment Diagnostic Checklist (40+ items)</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CODE PREVIEW ══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">Preview</div>
+    <h2 class="reveal">The implementation runs<br>out of the box.</h2>
+
+    <p class="reveal">The <code style="font-family:'Fira Code',monospace;font-size:13px;color:var(--code-txt);background:var(--code-bg);padding:2px 8px;border-radius:4px">context_manager.py</code> included in the bundle handles the full compression lifecycle — auto-trigger, state parsing, identity anchoring, and multi-agent handoff — with full inline documentation.</p>
+
+    <div class="code-preview reveal">
+      <div class="code-bar">
+        <div class="code-bar-dots"><span></span><span></span><span></span></div>
+        <div class="code-bar-label">context_manager.py — usage</div>
+      </div>
+      <div class="code-body">
+<pre><span class="kw">from</span> <span class="pn">context_manager</span> <span class="kw">import</span> <span class="fn">ContextManager</span><span class="pn">, </span><span class="fn">create_handoff_payload</span>
+
+<span class="cm"># Initialize a Tier 2 session with persona (Tier 3)</span>
+<span class="pn">ctx = </span><span class="fn">ContextManager</span><span class="pn">(</span>
+    <span class="pn">agent_id=</span><span class="str">"forge-01"</span><span class="pn">,</span>
+    <span class="pn">task=</span><span class="str">"Build Stripe webhook for payment_intent.succeeded"</span><span class="pn">,</span>
+    <span class="pn">compress_fn=my_llm_compress,</span>    <span class="cm"># Your LLM call — PT-02 prompt</span>
+    <span class="pn">persona={</span>
+        <span class="str">"name"</span><span class="pn">: </span><span class="str">"Forge"</span><span class="pn">,</span>
+        <span class="str">"role"</span><span class="pn">: </span><span class="str">"Senior Backend Engineer"</span><span class="pn">,</span>
+        <span class="str">"constraints"</span><span class="pn">: [</span><span class="str">"Always type-annotate"</span><span class="pn">, </span><span class="str">"Never skip errors"</span><span class="pn">],</span>
+        <span class="str">"anchor_interval"</span><span class="pn">: </span><span class="str">15</span>
+    <span class="pn">}</span>
+<span class="pn">)</span>
+
+<span class="cm"># Add turns — compression triggers automatically at threshold</span>
+<span class="pn">ctx.</span><span class="fn">add_turn</span><span class="pn">(</span><span class="str">"user"</span><span class="pn">, </span><span class="str">"I need a Stripe webhook handler"</span><span class="pn">)</span>
+<span class="pn">ctx.</span><span class="fn">add_turn</span><span class="pn">(</span><span class="str">"assistant"</span><span class="pn">, response_text)</span>
+
+<span class="cm"># Parse &lt;state_update&gt; from assistant response and apply it</span>
+<span class="pn">ctx.</span><span class="fn">update_state</span><span class="pn">(parsed_state_dict)</span>
+
+<span class="cm"># Inject identity anchor on interval (automate this)</span>
+<span class="kw">if</span> <span class="pn">ctx.</span><span class="fn">should_inject_anchor</span><span class="pn">():</span>
+    <span class="pn">ctx.</span><span class="fn">add_turn</span><span class="pn">(</span><span class="str">"system"</span><span class="pn">, ctx.</span><span class="fn">get_identity_anchor</span><span class="pn">())</span>
+
+<span class="cm"># Get full context block for next LLM call</span>
+<span class="pn">system_block = ctx.</span><span class="fn">to_system_prompt_block</span><span class="pn">()</span>
+
+<span class="cm"># Diagnostics — check token usage before deploying</span>
+<span class="fn">print</span><span class="pn">(ctx.</span><span class="fn">diagnostics</span><span class="pn">())</span>
+<span class="cm"># → {'estimated_total_tokens': 1840, 'warnings': [], ...}</span>
+
+<span class="cm"># Hand off cleanly to another specialist agent</span>
+<span class="pn">handoff = </span><span class="fn">create_handoff_payload</span><span class="pn">(</span>
+    <span class="pn">ctx, </span><span class="str">"wire-01"</span><span class="pn">, </span><span class="str">"Review for security issues"</span><span class="pn">, artifacts</span>
+<span class="pn">)</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ANTI-PATTERNS ════════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">Anti-Patterns</div>
+    <h2 class="reveal">The 10 things builders do<br>that guarantee collapse.</h2>
+
+    <p class="reveal">Every one of these is a real pattern observed in production. The Blueprint maps each one to an observable signal — what you see when it's happening — and a specific fix from the implementation templates.</p>
+
+    <div class="aps reveal">
+      <div class="ap">
+        <div class="ap-id">AP-01</div>
+        <div class="ap-body">
+          <div class="ap-name">Dumping the Full History</div>
+          <div class="ap-desc">Passing every turn verbatim until the window overflows, then truncating from the front. The model loses its initial instructions first — exactly the worst thing to lose.</div>
+          <div class="ap-fix">Fix → Progressive Summarization (PT-02) + keep last N turns verbatim</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-02</div>
+        <div class="ap-body">
+          <div class="ap-name">The Lazy System Prompt</div>
+          <div class="ap-desc">"You are a helpful assistant." Works for a demo. Collapses by turn 15 as the model drifts toward its default behavior with nothing to anchor it.</div>
+          <div class="ap-fix">Fix → PT-01 Session Init with role, constraints, and task framing</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-03</div>
+        <div class="ap-body">
+          <div class="ap-name">Trusting Model Memory</div>
+          <div class="ap-desc">Assuming the model remembers something because you said it earlier. It does — until the window fills. There is no memory without architecture.</div>
+          <div class="ap-fix">Fix → Tier 2 state object tracks everything critical; never trust implicit recall past turn 10</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-04</div>
+        <div class="ap-body">
+          <div class="ap-name">State in Prose</div>
+          <div class="ap-desc">Tracking state as narrative paragraphs: "The user decided in turn 3 and changed their mind in turn 7..." Prose state is expensive and the model misreads it constantly.</div>
+          <div class="ap-fix">Fix → State belongs in typed JSON. Prose is for context narrative. Never mix them.</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-05</div>
+        <div class="ap-body">
+          <div class="ap-name">Giant State Objects</div>
+          <div class="ap-desc">State JSON that grows to 4KB+ with every field ever touched. The model starts skipping fields. You pay tokens for data the model ignores.</div>
+          <div class="ap-fix">Fix → State holds only CURRENT data. Archive completed steps. Hard cap at ~900 tokens.</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-06</div>
+        <div class="ap-body">
+          <div class="ap-name">Compression Without a Budget</div>
+          <div class="ap-desc">Compressing context with no word count target. The model writes 600 words. You save 50 tokens. You lose the structural integrity of the summary.</div>
+          <div class="ap-fix">Fix → PT-02 specifies 150–200 words maximum. Enforce it in the prompt.</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-07</div>
+        <div class="ap-body">
+          <div class="ap-name">Cold Handoffs</div>
+          <div class="ap-desc">Passing a task from Agent A to Agent B with only the original task description. Agent B has no knowledge of what A tried, learned, or decided. It starts from scratch.</div>
+          <div class="ap-fix">Fix → PT-05 Handoff Brief + create_handoff_payload() in context_manager.py</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-08</div>
+        <div class="ap-body">
+          <div class="ap-name">Persona Without Anchoring</div>
+          <div class="ap-desc">Defining a named agent persona once and never re-injecting it. For sessions over 20 turns, persona constraints decay. The specialist becomes a generic assistant.</div>
+          <div class="ap-fix">Fix → PT-06 anchors at turns 15, 30, 45. Automate with should_inject_anchor().</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-09</div>
+        <div class="ap-body">
+          <div class="ap-name">No Failure Detection</div>
+          <div class="ap-desc">No mechanism to detect looping, confabulating, or drifting. Session runs to completion. Output is garbage. You find out when the user complains.</div>
+          <div class="ap-fix">Fix → Monitor for: identical tool calls in succession, turn count &gt; 2× expected</div>
+        </div>
+      </div>
+      <div class="ap">
+        <div class="ap-id">AP-10</div>
+        <div class="ap-body">
+          <div class="ap-name">RAG Without Reranking</div>
+          <div class="ap-desc">Semantic similarity ≠ task relevance. Top-5 retrieval gives the model a related-but-wrong chunk. It acts on it confidently.</div>
+          <div class="ap-fix">Fix → Retrieve top-10, ask the model to select the 3 most relevant before using them.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ WHO IT'S FOR ══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">Who This Is For</div>
+    <h2 class="reveal">Built for people shipping<br>real agents.</h2>
+
+    <div class="for-who reveal">
+      <div class="who-row">
+        <span class="who-check">✓</span>
+        <span class="who-text"><strong>Solo developers</strong> building AI products on Claude, GPT-4o, or Gemini who've hit context failures in production and don't know exactly why</span>
+      </div>
+      <div class="who-row">
+        <span class="who-check">✓</span>
+        <span class="who-text"><strong>Indie hackers</strong> running multi-step AI automations that need agents to maintain coherence across 20+ turns without constant babysitting</span>
+      </div>
+      <div class="who-row">
+        <span class="who-check">✓</span>
+        <span class="who-text"><strong>Consultant-developers</strong> deploying agent systems for clients who need production reliability — not demo-quality — before handing off</span>
+      </div>
+      <div class="who-row">
+        <span class="who-check">✓</span>
+        <span class="who-text"><strong>Technical operators</strong> running AI customer support, research agents, or coding assistants where context loss directly costs money per failed session</span>
+      </div>
+      <div class="who-row">
+        <span class="who-check">✓</span>
+        <span class="who-text"><strong>Multi-agent builders</strong> running specialist teams (BizOS, OpenClaw, LangGraph) who need proper isolation, handoff patterns, and shared state architecture</span>
+      </div>
+    </div>
+
+    <div class="not-box reveal">
+      <div class="not-box-label">This is not for</div>
+      <ul class="not-list">
+        <li>People looking for a prompt engineering basics introduction — this assumes you're already building and have hit real problems</li>
+        <li>Enterprise teams with dedicated ML infrastructure budgets — Zep, MemGPT, and Mem0 are better choices at that scale</li>
+        <li>Single-turn chatbot builders with no multi-step logic — you don't have a context management problem yet</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DIFFERENTIATION ══════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">Why This Product</div>
+    <h2 class="reveal">What doesn't exist<br>anywhere else.</h2>
+
+    <p class="reveal">Existing resources on agent memory fall into three categories: academic papers (correct but unusable without months of interpretation), enterprise tool documentation (requires infrastructure you don't have), or vague blog posts that tell you to "use summarization" with no schemas, no code, no decision framework.</p>
+
+    <p class="reveal">The Blueprint is none of those.</p>
+
+    <div class="diff-list reveal">
+      <div class="diff-row">
+        <div class="diff-arrow">→</div>
+        <div class="diff-text"><strong>Decision trees, not vibes.</strong> Four questions. One matrix. The correct strategy for your situation is unambiguous — not a matter of opinion.</div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-arrow">→</div>
+        <div class="diff-text"><strong>Working code, not pseudocode.</strong> <code style="font-family:'Fira Code',monospace;font-size:12px;color:var(--code-txt)">context_manager.py</code> runs. The schemas are deployable JSON. The prompts are tested on three model families.</div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-arrow">→</div>
+        <div class="diff-text"><strong>Failure catalog, not just happy path.</strong> What breaks, what the observable signal is, and the exact recovery prompt to use — not just how to build it right the first time.</div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-arrow">→</div>
+        <div class="diff-text"><strong>Multi-agent coverage.</strong> Tier 4 schema, handoff payloads, specialist isolation patterns — for BizOS, OpenClaw, and any other multi-specialist team architecture.</div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-arrow">→</div>
+        <div class="diff-text"><strong>Built from production debugging, not research.</strong> Every pattern in this blueprint came from running real systems — clawd, BizOS, MCP pipelines — and finding what breaks at scale.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ AUTHOR ════════════════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">Author</div>
+    <h2 class="reveal">Built by a practitioner,<br>for practitioners.</h2>
+
+    <div class="author reveal">
+      <div class="author-av">R</div>
+      <div>
+        <div class="author-name">Rachid — DevDiary.uk</div>
+        <div class="author-role">Solo Developer · ERP/SAP Consultant · OpenClaw Architect</div>
+        <div class="author-bio">
+          I have been building and shipping multi-agent systems since before the frameworks existed. The patterns in this blueprint come from months of debugging context failures in production: in clawd (a Claude Code-parity coding agent built on a custom SDK), BizOS (a 6-specialist agentic OS with named personas and inter-agent handoffs), and client deployments running real workloads on Termux and Contabo VPS.
+          <br><br>
+          I wrote this because the resource I needed didn't exist. The existing documentation was either too abstract to implement or required infrastructure a solo builder can't justify. This is what I wish I had at the start of that debugging process.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ GUARANTEE ════════════════════════════════════════════════ -->
+<div class="wrap">
+  <div class="guarantee reveal">
+    <div class="guarantee-icon">🛡</div>
+    <div>
+      <div class="guarantee-title">30-Day No-Questions Refund</div>
+      <div class="guarantee-text">If the Blueprint doesn't help you solve a real context collapse problem in your agent within 30 days, email me for a full refund. No forms. No justification required. One email.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FAQ ═══════════════════════════════════════════════════════ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-eyebrow reveal">FAQ</div>
+    <h2 class="reveal">Common questions.</h2>
+
+    <div class="faq reveal">
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">What models does this work with? <span class="faq-icon">+</span></div>
+        <div class="faq-a">Claude Sonnet / Haiku / Opus, GPT-4o and GPT-4o mini, and Gemini 1.5 Pro and 2.0 Flash. The architecture is model-agnostic. The prompt templates are tested on all three families. Claude-specific optimizations are called out where they exist, but every pattern works across providers.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Do I need to know Python? <span class="faq-icon">+</span></div>
+        <div class="faq-a">To use context_manager.py directly, yes — basic Python. But the JSON schemas, prompt templates, and decision framework are language-agnostic. A TypeScript or JavaScript port of the core class is straightforward from the commented Python — the logic maps 1:1.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Is this for coding agents specifically, or any agent? <span class="faq-icon">+</span></div>
+        <div class="faq-a">Any agent. The architecture covers customer support agents, research agents, document agents, multi-step automation pipelines, and multi-specialist teams. Coding agents are one use case, not the target audience.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">What format is the download? <span class="faq-icon">+</span></div>
+        <div class="faq-a">A ZIP file containing: the PDF guide, context_manager.py, context-schemas.json, prompt-templates-PT01-PT07.txt, DEPLOYMENT-CHECKLIST.md, and a README. Everything is plain text or PDF — no proprietary formats, no platform dependencies, no accounts required.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Will this be updated as models change? <span class="faq-icon">+</span></div>
+        <div class="faq-a">Yes. The core architecture is model-agnostic and won't change between releases, but prompt templates are updated as model behaviors evolve. All buyers receive future updates at no extra cost via Gumroad's download system.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Why $79 and not $29? <span class="faq-icon">+</span></div>
+        <div class="faq-a">Because it solves a production problem that costs real money per failure, and the solution takes hours to research and implement from scratch. A single prevented production incident — one user not churning, one refund avoided — pays for it in full. The price reflects the value, not the word count.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Is there a free sample or a cheaper version? <span class="faq-icon">+</span></div>
+        <div class="faq-a">The Context Collapse Diagnostic at the top of this page is free — run it to confirm which collapse signature your agent is hitting. There is no stripped-down version; the architecture only makes sense as a complete system. The 30-day refund removes the risk entirely.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FINAL CTA ══════════════════════════════════════════════════ -->
+<section class="cta-final">
+  <div class="wrap">
+    <h2>Fix the architecture once.<br>Ship better agents.</h2>
+    <p>$79 one-time · Instant download · 30-day refund guarantee</p>
+    <a href="https://ubix08.gumroad.com/l/agent-memory-blueprint" class="btn-primary">Get the Agent Memory Blueprint →</a>
+    <div class="price-includes">
+      <span class="pill">PDF Guide — 26 pages</span>
+      <span class="pill">context_manager.py</span>
+      <span class="pill">4 JSON Schemas</span>
+      <span class="pill">7 Prompt Templates</span>
+      <span class="pill">Deployment Checklist</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════ -->
+<footer>
+  <p>Built by <a href="/">DevDiary.uk</a> × <a href="https://openclaw.ai">OpenClaw</a> · All rights reserved · Questions: devdiary.uk</p>
+</footer>
+
+<!-- ── SCRIPTS ─────────────────────────────────────────────────── -->
+<script>
+// ── DIAGNOSTIC WIDGET ────────────────────────────────────────────
+let q1Answer = null;
+
+function selectQ1(val) {
+  q1Answer = val;
+  document.querySelectorAll('#q1 .diag-opt').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+
+  setTimeout(() => {
+    document.getElementById('q1').style.display = 'none';
+    document.getElementById('q2').style.display = 'block';
+    document.getElementById('prog-2').classList.add('active');
+  }, 350);
+}
+
+function selectQ2(val) {
+  document.querySelectorAll('#q2 .diag-opt').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+
+  setTimeout(() => {
+    document.getElementById('q2').style.display = 'none';
+    showResult(q1Answer, val);
+    document.getElementById('diag-reset').style.display = 'block';
+  }, 300);
+}
+
+function showResult(q1, q2) {
+  let resultId;
+
+  if (q1 === 'amnesiac') {
+    resultId = 'result-amnesiac';
+  } else if (q1 === 'confab') {
+    resultId = 'result-confab';
+  } else if (q1 === 'loop') {
+    resultId = 'result-loop';
+  } else if (q1 === 'none') {
+    resultId = (q2 === 'short') ? 'result-short' : 'result-preempt';
+  }
+
+  const el = document.getElementById(resultId);
+  if (el) {
+    el.style.display = 'block';
+    requestAnimationFrame(() => el.style.opacity = '1');
+  }
+}
+
+function resetDiag() {
+  q1Answer = null;
+  ['result-amnesiac','result-confab','result-loop','result-short','result-preempt'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('q1').style.display = 'block';
+  document.getElementById('q2').style.display = 'none';
+  document.getElementById('prog-2').classList.remove('active');
+  document.getElementById('diag-reset').style.display = 'none';
+  document.querySelectorAll('.diag-opt').forEach(b => b.classList.remove('selected'));
+}
+
+// ── FAQ ACCORDION ─────────────────────────────────────────────────
+function toggleFaq(el) {
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) el.classList.add('open');
+}
+
+// ── SCROLL REVEAL ─────────────────────────────────────────────────
+const revealEls = document.querySelectorAll('.reveal, .sig-card');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+revealEls.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

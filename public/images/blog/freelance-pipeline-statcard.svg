@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" role="img" aria-label="Stat card for the Freelance Pipeline &amp; Follow-Up Tracker: 291 formulas, 50 email templates, 6 tabs, priced at $47.">
+  <title>Freelance Pipeline Tracker — At a Glance (June 2026)</title>
+  <desc>Key statistics for the Freelance Pipeline and Follow-Up Tracker spreadsheet: 291 formulas across the entire workbook, 50 done-for-you email templates across 10 categories, 6 fully-built tabs including Pipeline, Dashboard, Invoice Tracker, Follow-Up Scheduler, Settings, and How To Use documentation. Priced at $47 on Gumroad.</desc>
+
+  <style>
+    .card-bg { fill: #1e293b; }
+    .card-border { fill: none; stroke: #334155; stroke-width: 1; }
+    .price { fill: #fbbf24; font-family: system-ui, -apple-system, sans-serif; font-size: 42px; font-weight: 800; letter-spacing: -0.02em; }
+    .price-symbol { fill: #fbbf24; font-family: system-ui, -apple-system, sans-serif; font-size: 24px; font-weight: 700; }
+    .stat-primary { fill: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
+    .stat-primary-label { fill: #94a3b8; font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; }
+    .stat-secondary { fill: #cbd5e1; font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 700; }
+    .stat-secondary-label { fill: #64748b; font-family: system-ui, -apple-system, sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.06em; }
+    .divider { stroke: #334155; stroke-width: 1; }
+    .source { fill: #475569; font-family: system-ui, -apple-system, sans-serif; font-size: 8px; }
+    .dot { fill: #14b8a6; }
+  </style>
+
+  <!-- Card background -->
+  <rect x="0" y="0" width="420" height="220" rx="12" ry="12" class="card-bg" />
+  <rect x="0" y="0" width="420" height="220" rx="12" ry="12" class="card-border" />
+
+  <!-- Left section: Stats -->
+  <!-- 291 FORMULAS -->
+  <text x="24" y="42" class="stat-primary-label">FORMULAS</text>
+  <text x="24" y="80" class="stat-primary">291</text>
+
+  <!-- Divider -->
+  <line x1="24" y1="95" x2="230" y2="95" class="divider" />
+
+  <!-- 50 EMAIL TEMPLATES + 6 TABS -->
+  <text x="24" y="118" class="stat-secondary-label">EMAIL TEMPLATES</text>
+  <text x="24" y="142" class="stat-secondary">50</text>
+  <text x="80" y="142" class="stat-secondary-label" dominant-baseline="middle" fill="#64748b">across 10 categories</text>
+
+  <circle cx="24" cy="165" r="3" class="dot" />
+  <text x="34" y="165" class="stat-secondary" dominant-baseline="middle">6</text>
+  <text x="52" y="165" class="stat-secondary-label" dominant-baseline="middle">fully-built tabs</text>
+
+  <!-- Right section: Price -->
+  <line x1="256" y1="20" x2="256" y2="200" class="divider" />
+
+  <text x="340" y="88" class="price-symbol" text-anchor="middle" dominant-baseline="middle">$</text>
+  <text x="380" y="92" class="price" text-anchor="end">47</text>
+  <text x="340" y="130" class="stat-secondary-label" text-anchor="middle">one-time purchase</text>
+
+  <!-- Bottom source -->
+  <text x="24" y="208" class="source">Built with ContentOS Pixel · Freelance Pipeline Tracker · June 2026</text>
+</svg>

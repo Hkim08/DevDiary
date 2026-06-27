@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 380" role="img" aria-label="Horizontal bar chart showing formula count per tab in the Freelance Pipeline &amp; Follow-Up Tracker: Follow-Up Scheduler 55 formulas, Dashboard 47, Pipeline 42, Invoice Tracker 38, Settings 23, How To Use 0 (documentation only).">
+  <title>Formulas per Tab — Freelance Pipeline Tracker (June 2026)</title>
+  <desc>Horizontal bar chart of 291 total formulas distributed across 6 tabs. Follow-Up Scheduler leads with 55 formulas for cadence logic and next-date auto-calculation. Dashboard follows with 47 formulas using SUMPRODUCT, COUNTIFS, and ARRAYFORMULA for weighted pipeline value. Pipeline has 42 formulas for conditional formatting and stage validation. Invoice Tracker has 38 formulas for days-overdue calculation and escalation colors. Settings has 23 formulas for named ranges and probability tables. How To Use has 0 formulas as it is documentation only.</desc>
+
+  <style>
+    .title { fill: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+    .subtitle { fill: #94a3b8; font-family: system-ui, -apple-system, sans-serif; font-size: 12px; }
+    .bar-label { fill: #cbd5e1; font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 500; }
+    .bar-value { fill: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 600; }
+    .axis-label { fill: #64748b; font-family: system-ui, -apple-system, sans-serif; font-size: 10px; }
+    .gridline { stroke: #334155; stroke-width: 1; stroke-dasharray: 3,3; }
+    .source { fill: #475569; font-family: system-ui, -apple-system, sans-serif; font-size: 9px; }
+    .bar-fs { fill: #14b8a6; } /* teal-500 */
+    .bar-db { fill: #06b6d4; } /* cyan-500 */
+    .bar-pl { fill: #0ea5e9; } /* sky-500 */
+    .bar-it { fill: #3b82f6; } /* blue-500 */
+    .bar-st { fill: #6366f1; } /* indigo-500 */
+    .bar-ht { fill: #6b7280; } /* gray-500 */
+    .total-highlight { fill: #fbbf24; font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 700; }
+  </style>
+
+  <!-- Background -->
+  <rect width="620" height="380" fill="transparent" />
+
+  <!-- Title -->
+  <text x="25" y="32" class="title">Formulas per Tab</text>
+  <text x="25" y="50" class="subtitle">Freelance Pipeline &amp; Follow-Up Tracker · June 2026</text>
+
+  <!-- Grid lines -->
+  <line x1="150" y1="68" x2="150" y2="340" class="gridline" />
+  <line x1="221.7" y1="68" x2="221.7" y2="340" class="gridline" />
+  <line x1="293.3" y1="68" x2="293.3" y2="340" class="gridline" />
+  <line x1="365" y1="68" x2="365" y2="340" class="gridline" />
+  <line x1="436.7" y1="68" x2="436.7" y2="340" class="gridline" />
+  <line x1="508.3" y1="68" x2="508.3" y2="340" class="gridline" />
+  <line x1="580" y1="68" x2="580" y2="340" class="gridline" />
+
+  <!-- X-axis labels -->
+  <text x="150" y="355" class="axis-label" text-anchor="middle">0</text>
+  <text x="221.7" y="355" class="axis-label" text-anchor="middle">10</text>
+  <text x="293.3" y="355" class="axis-label" text-anchor="middle">20</text>
+  <text x="365" y="355" class="axis-label" text-anchor="middle">30</text>
+  <text x="436.7" y="355" class="axis-label" text-anchor="middle">40</text>
+  <text x="508.3" y="355" class="axis-label" text-anchor="middle">50</text>
+  <text x="580" y="355" class="axis-label" text-anchor="middle">60</text>
+
+  <!-- Bars -->
+
+  <!-- Row 1: Follow-Up Scheduler (55) -->
+  <text x="145" y="92.5" class="bar-label" text-anchor="end" dominant-baseline="middle">Follow-Up Scheduler</text>
+  <rect x="150" y="78.5" width="394.2" height="28" rx="4" ry="4" class="bar-fs" />
+  <text x="552.2" y="92.5" class="bar-value" dominant-baseline="middle">55</text>
+
+  <!-- Row 2: Dashboard (47) -->
+  <text x="145" y="137.5" class="bar-label" text-anchor="end" dominant-baseline="middle">Dashboard</text>
+  <rect x="150" y="123.5" width="336.8" height="28" rx="4" ry="4" class="bar-db" />
+  <text x="494.8" y="137.5" class="bar-value" dominant-baseline="middle">47</text>
+
+  <!-- Row 3: Pipeline (42) -->
+  <text x="145" y="182.5" class="bar-label" text-anchor="end" dominant-baseline="middle">Pipeline</text>
+  <rect x="150" y="168.5" width="301" height="28" rx="4" ry="4" class="bar-pl" />
+  <text x="459" y="182.5" class="bar-value" dominant-baseline="middle">42</text>
+
+  <!-- Row 4: Invoice Tracker (38) -->
+  <text x="145" y="227.5" class="bar-label" text-anchor="end" dominant-baseline="middle">Invoice Tracker</text>
+  <rect x="150" y="213.5" width="272.3" height="28" rx="4" ry="4" class="bar-it" />
+  <text x="430.3" y="227.5" class="bar-value" dominant-baseline="middle">38</text>
+
+  <!-- Row 5: Settings (23) -->
+  <text x="145" y="272.5" class="bar-label" text-anchor="end" dominant-baseline="middle">Settings</text>
+  <rect x="150" y="258.5" width="164.8" height="28" rx="4" ry="4" class="bar-st" />
+  <text x="322.8" y="272.5" class="bar-value" dominant-baseline="middle">23</text>
+
+  <!-- Row 6: How To Use (0) -->
+  <text x="145" y="317.5" class="bar-label" text-anchor="end" dominant-baseline="middle">How To Use</text>
+  <rect x="150" y="303.5" width="3" height="28" rx="2" ry="2" class="bar-ht" />
+  <text x="161" y="317.5" class="bar-value" dominant-baseline="middle" fill="#6b7280">0</text>
+  <text x="185" y="317.5" class="axis-label" dominant-baseline="middle">(documentation only)</text>
+
+  <!-- Total callout -->
+  <text x="430" y="370" text-anchor="end" class="source">
+    Total: 205 formulas + 86 conditional formatting rules = 
+  </text>
+  <text x="432" y="370" text-anchor="start" class="total-highlight">291</text>
+  <text x="460" y="370" text-anchor="start" class="source"> | Built with ContentOS Pixel</text>
+</svg>
