@@ -1,0 +1,413 @@
+---
+title: "OpenClaw 2026: Self-Hosted AI Gateway Setup from Scratch"
+description: "How to install, configure, and harden OpenClaw 2026 — the self-hosted gateway that connects Claude and other LLMs to WhatsApp, Telegram, Discord, and 50+ channels with persistent memory."
+pubDate: 2026-06-16
+author: 'Rachid Houmayni'
+category: "Tutorials"
+readingTime: "12 min read"
+tags: ['openclaw', 'self-hosted', 'ai-agents', 'claude-code', 'mcp', 'tutorial']
+featured: false
+---
+
+Most AI chat setups die the moment you close the browser tab. OpenClaw doesn't. It's a self-hosted Gateway — a persistent daemon that connects your LLMs to WhatsApp, Telegram, Discord, Slack, and 50+ other channels, with procedural memory that survives restarts. You own the infrastructure, the credentials, and the data.
+
+This is a ground-up tutorial for the v2026.3.22 release. By the end you'll have a running Gateway, Claude connected through Anthropic's API, at least one messaging channel wired up, and the security baseline in place. Everything runs on a $10/month VPS.
+
+## What OpenClaw actually is
+
+OpenClaw is the successor to MoltBot/ClawdBot, now governed by the OpenClaw Foundation under an MIT license. The 2026 release dropped the MoltBot/ClawdBot naming entirely — if you're upgrading from a previous install, every `MOLTBOT_*` and `CLAWDBOT_*` environment variable needs to be renamed to `OPENCLAW_*`, and your state directory migrates from `~/.moltbot` to `~/.openclaw`. Run `openclaw doctor --fix` after upgrading and it handles most of this automatically.
+
+The core abstraction is the **Gateway** — a long-running Node.js process that:
+
+- Maintains authenticated connections to messaging platforms
+- Routes messages to a configured LLM (Claude, GPT, Gemini, or local models via OpenRouter)
+- Stores procedural memory in `~/.openclaw/workspace/memory.md`, updated every 30 minutes by a Heartbeat cycle
+- Executes tools through a sandboxed environment with configurable allow/deny lists
+- Exposes a Control UI at port 18789
+
+Everything is configured through a single `openclaw.json` file. The Gateway has a strict validation gate — it refuses to start if it finds unknown keys or malformed types in that file, which is annoying during setup and extremely useful in production.
+
+## Prerequisites
+
+- Node.js 18+ (20 LTS recommended)
+- 2 CPU cores, 4GB RAM minimum. If you're enabling Playwright browser automation, 8GB is mandatory — orphaned Chromium processes are the leading cause of OOM kills on smaller VPS instances
+- A 1GB VPS will hit Exit Code 137 (OOM-killed) during `pnpm install`. Don't try it
+- An Anthropic API key (or any other supported provider)
+- One messaging platform credential to connect (Telegram bot token is the easiest starting point)
+
+## Installation
+
+```bash
+# Install the CLI globally
+npm install -g @openclaw/gateway
+
+# Verify the install
+openclaw --version
+```
+
+Run the setup wizard to initialize the `~/.openclaw` directory and generate the default workspace files:
+
+```bash
+openclaw setup
+```
+
+This creates:
+
+```text
+~/.openclaw/
+├── openclaw.json          ← Primary config file
+├── workspace/
+│   ├── SOUL.md            ← Agent identity and persona
+│   ├── memory.md          ← Persistent knowledge base (Heartbeat-updated)
+│   └── USER.md            ← Operator preferences
+└── plugins/               ← ClawHub skill installs
+```
+
+Don't edit `memory.md` directly during setup — the Heartbeat cycle owns it.
+
+## Configuring your first provider
+
+Open `~/.openclaw/openclaw.json`. The minimal configuration to connect Claude looks like this:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "models": [
+        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-opus-4-7"
+      ]
+    }
+  },
+  "providers": {
+    "anthropic": {
+      "apiKey": "sk-ant-..."
+    }
+  }
+}
+```
+
+Two things to note about model references. First, the format is strict — always `provider/model`, never just the model name. Second, if you later update the model list via CLI, use `--merge` to add models without wiping existing entries:
+
+```bash
+openclaw config set agents.defaults.models --merge "anthropic/claude-opus-4-6"
+```
+
+A plain replacement without `--replace` is rejected to prevent accidentally nuking your model catalog.
+
+For production, don't put your API key in plaintext. Use the **SecretRef** pattern instead:
+
+```json
+{
+  "providers": {
+    "anthropic": {
+      "apiKey": {
+        "$type": "SecretRef",
+        "provider": "env",
+        "key": "ANTHROPIC_API_KEY"
+      }
+    }
+  }
+}
+```
+
+This tells the Gateway to pull the key from the environment variable at runtime rather than reading it from the config file. You can also use the `exec` provider to fetch from HashiCorp Vault or AWS Secrets Manager.
+
+## Adding a messaging channel
+
+Telegram is the easiest first channel — it only needs a bot token, has no webhook configuration requirements, and the connection is reliable for testing.
+
+Get a bot token from [@BotFather](https://t.me/botfather), then add the channel to your config:
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "token": {
+        "$type": "SecretRef",
+        "provider": "env",
+        "key": "TELEGRAM_BOT_TOKEN"
+      },
+      "dmPolicy": "pairing"
+    }
+  }
+}
+```
+
+`dmPolicy: "pairing"` means the bot ignores messages from users who haven't been approved by you. This is the correct default for a personal Gateway — set it to `"open"` only if you're building a public bot and understand the implications.
+
+## Starting the Gateway and pairing your device
+
+```bash
+# Start the Gateway as a background daemon
+openclaw gateway start
+
+# Check that it's alive
+openclaw status --all
+```
+
+The first time you connect a client (the Control UI, the CLI, or a mobile app), you need to complete a zero-trust pairing flow. The Gateway generates a pairing QR code or code that you approve from the host:
+
+```bash
+# List pending pairing requests
+openclaw devices list
+
+# Approve by request ID
+openclaw devices approve <requestId>
+```
+
+Once approved, access the Control UI at `http://localhost:18789/?token=<YOUR_TOKEN>`. The token is generated by:
+
+```bash
+openclaw dashboard
+```
+
+Don't expose port 18789 to the public internet. Access it through an SSH tunnel (`ssh -L 18789:localhost:18789 user@your-vps`) or Tailscale Serve.
+
+## Wiring in MCP servers
+
+MCP (Model Context Protocol) is how you give the agent access to external tools — file system, web search, databases, GitHub. OpenClaw treats MCP servers as first-class integrations configured under the `mcp` key.
+
+The minimal useful additions:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "fetch": {
+        "type": "npm",
+        "package": "@modelcontextprotocol/server-fetch"
+      },
+      "filesystem": {
+        "type": "npm",
+        "package": "@modelcontextprotocol/server-filesystem",
+        "args": ["--root", "/home/user/projects"]
+      }
+    }
+  }
+}
+```
+
+`fetch` gives the agent the ability to read any URL. `filesystem` gives read (and optionally write) access to a directory. Always start read-only — add the `--write` flag to filesystem only after you've verified the agent's behavior in read mode.
+
+For Claude Code ACP integration (covered below), you'll also want the plugin bridge:
+
+```bash
+openclaw config set plugins.entries.acpx.config.mcpBridges.plugins=true
+```
+
+This exposes OpenClaw's plugin-registered tools to any external ACP harness that connects through the Gateway.
+
+## The two-layer policy system: where people get this wrong
+
+The most common configuration mistake in OpenClaw is a **two-layer policy mismatch** on tools. If your agent says "I don't have the read tool" despite it being installed, you've hit this.
+
+Every tool must appear in **both** places:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "tools": {
+        "allow": ["read", "write", "browser"]
+      }
+    }
+  },
+  "tools": {
+    "sandbox": {
+      "tools": ["read", "write", "browser"]
+    }
+  }
+}
+```
+
+The first list (`agents.defaults.tools.allow`) controls what the LLM is told it can use. The second (`tools.sandbox.tools`) controls what the runtime actually permits. Both lists must include the tool name or the runtime rejects the call. Add to one and forget the other, and you'll spend 20 minutes wondering why nothing works.
+
+## Connecting Claude Code as an ACP harness
+
+This is the part that makes OpenClaw genuinely useful for development workflows. Claude Code connects to the Gateway as an **ACP agent** — the Gateway owns session routing and memory, Claude Code owns code execution.
+
+Enable the `acpx` plugin:
+
+```bash
+openclaw plugin install @openclaw/acpx
+```
+
+Then spawn a Claude Code session from any connected messaging channel:
+
+```
+/acp spawn claude --bind here
+```
+
+The `--bind here` flag pins the ACP session to the current conversation. Follow-up messages in that conversation route directly to Claude Code. Management commands (`/status`, `/unfocus`, `/acp cancel`) are intercepted by the Gateway before they reach the harness, so your chat transcript stays clean.
+
+For background coding tasks (sub-agent mode), use the `sessions_spawn` tool instead:
+
+```json
+{
+  "runtime": "acp",
+  "mode": "run",
+  "harness": "claude"
+}
+```
+
+In this mode, Claude Code runs on a dedicated background lane. Results come back through the task-completion path — the parent agent rewrites the output into its own voice for the user. This prevents the echo-loop problem where parent and child keep waking each other with their own results.
+
+## Setting up persistent memory
+
+The Heartbeat cycle writes `memory.md` every 30 minutes. That's the default procedural memory layer — it accumulates facts about your preferences, ongoing projects, and past decisions. The agent reads this at the start of every session.
+
+For the memory search to work reliably, reindex after the first few sessions:
+
+```bash
+openclaw memory reindex
+```
+
+Set your Heartbeat interval explicitly in the config (the default of 30 minutes is sensible for most setups):
+
+```json
+{
+  "gateway": {
+    "heartbeatIntervalMinutes": 30
+  }
+}
+```
+
+If you're running a multi-user or public-facing deployment, enable session isolation so users don't bleed context into each other:
+
+```json
+{
+  "session": {
+    "dmScope": "per-channel-peer"
+  }
+}
+```
+
+`per-channel-peer` gives each user a separate session per messaging platform. `per-peer` gives them one session across all platforms (so they can start a task on Telegram and continue it on Discord). `main` routes everything to a single global session — only correct for strictly personal, single-user setups.
+
+## The security baseline
+
+Don't go to production without these five settings in place.
+
+**1. Bind to loopback.**
+
+```json
+{
+  "gateway": {
+    "bind": "loopback"
+  }
+}
+```
+
+The Gateway should never be publicly reachable. Loopback + SSH tunnel or Tailscale is the correct access pattern.
+
+**2. Token authentication.**
+
+```json
+{
+  "gateway": {
+    "auth": {
+      "mode": "token"
+    }
+  }
+}
+```
+
+Never leave `auth.mode: "none"` in production. Verify this is set: `openclaw config get gateway.auth.mode`.
+
+**3. SecretRef for all credentials.** No plaintext API keys or channel tokens in `openclaw.json`. Use the `env` SecretRef provider at minimum.
+
+**4. Sandbox mode.**
+
+```json
+{
+  "tools": {
+    "sandbox": {
+      "mode": "all"
+    }
+  }
+}
+```
+
+This enforces sandboxing for all tool execution, not just explicitly sandboxed calls.
+
+**5. Human-in-the-Loop for dangerous operations.** OpenClaw's baseline defense rate against malicious instructions is 17% when relying only on the LLM's system prompt. Adding a HITL gate for sensitive tool calls raises that to 92%. For ACP sub-agents specifically:
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "acpx": {
+        "config": {
+          "permissionMode": "approve-reads"
+        }
+      }
+    }
+  }
+}
+```
+
+`approve-reads` means the ACP harness can read freely but any file write or command execution requires your approval. The Gateway surfaces these as approval prompts in your messaging channel before the operation runs.
+
+## Smoke-testing the deployment
+
+Run this sequence to verify the Gateway is fully operational before trusting it with real work.
+
+**Step 1: Config validation.**
+
+```bash
+openclaw doctor --fix
+```
+
+Output should report "Gateway configuration is valid." If it finds unknown keys or type mismatches, it'll report them and fix what it can automatically.
+
+**Step 2: Internal logic test (no API tokens consumed).**
+
+```bash
+openclaw --smoke --embedded-provider
+```
+
+This forces the Gateway to initialize a local reasoning loop, execute a sample tool call, and verify the SQLite session store. It doesn't call any external API.
+
+**Step 3: Endpoint check.**
+
+```bash
+curl -fsS http://127.0.0.1:18789/healthz
+```
+
+A 200 response confirms the Gateway and all channel adapters are ready.
+
+**Step 4: ACP readiness (if you installed acpx).**
+
+From a connected messaging channel, send:
+
+```
+/acp doctor
+```
+
+This verifies the ACP backend is healthy and that harness permissions are correctly restricted.
+
+## The troubleshooting matrix
+
+| Symptom | Root cause | Fix |
+|---|---|---|
+| `"Agent couldn't generate a response"` | OpenRouter base URL missing `/api/` subpath | Change `openrouter.ai/v1` to `openrouter.ai/api/v1` in `models.json` |
+| `"I don't have the read tool"` | Two-layer policy mismatch | Add the tool to both `agents.defaults.tools.allow` and `tools.sandbox.tools` |
+| `SyntaxError` on hashed filenames | Failed auto-restart after `openclaw update` | `openclaw gateway stop && pkill -f openclaw-gateway && openclaw gateway start` |
+| `"Another gateway instance is listening"` | Port collision with stale daemon | `openclaw gateway stop --all`, then clear stale systemd/launchd services |
+| `disconnected (1008): secure context` | Control UI requires HTTPS or localhost | Use SSH tunnel or Tailscale Serve |
+| `EACCES: permission denied` | npm global directory permissions wrong | `mkdir ~/.npm-global`, update `$PATH` |
+| `tool_result orphaned` | Session corruption after context compaction | Reset the session — durable context in `memory.md` is safe |
+| Exit Code 137 on VPS | OOM during `pnpm install` | Upgrade to at least 4GB RAM, or add 2GB swap |
+
+## What happens over the first 30 days
+
+The first week the agent runs in reactive mode — it answers messages, executes tools, and writes to `memory.md` after each session via the Heartbeat cycle. The memory file is sparse.
+
+By week two, run `openclaw memory reindex`. The vector index is maturing. You'll notice the agent stops asking for context you've already given it. Token consumption on repeated coding patterns starts dropping — some operators report 60-80% reduction in tokens for iterative tasks as the agent learns to offload to its memory rather than re-deriving context.
+
+By day 30, the agent has enough procedural memory to start behaving proactively. If you've configured cron triggers, it runs maintenance and research tasks while you're offline. It's not magic — it's just persistence working the way it should have from the start. You've built a system that compounds instead of resetting.
+
+---
+
+The full spec is 265 sections. This tutorial covers what you need to be operational. For the enterprise path — Kubernetes Helm deployment, Prometheus/OpenTelemetry observability, CLAW-10 security hardening with OPA, and multi-tenant MSP configuration — the official OpenClaw Foundation docs are the right next stop. For how this fits into a broader personal agent OS, see [Personal Claude OS: How I Turned ~/.claude/ Into a Portable Productivity System](/blog/personal-claude-os/).

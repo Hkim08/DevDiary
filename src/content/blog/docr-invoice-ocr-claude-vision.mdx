@@ -1,0 +1,167 @@
+---
+title: 'DOCR: I Built a React App That Extracts Structured JSON from Invoices Using Claude Vision'
+description: 'How I built a browser-native invoice OCR app using React 18, Claude Vision, and PDF.js — with a 5-step extraction pipeline, three result views, and CSV/JSON export.'
+pubDate: 2026-06-26
+author: 'Rachid Houmayni'
+image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200'
+category: 'Products'
+readingTime: '7 min read'
+tags: ['react', 'claude-vision', 'invoice-ocr', 'document-processing', 'source-code', 'indie-hacker']
+featured: false
+coverType: 'product'
+draft: false
+---
+
+Invoice data entry is the most tedious recurring task in every freelance business. I automated it with a React app that calls Claude Vision's API and returns structured JSON — line items, totals, vendor info — from PDFs and images.
+
+The architecture is simple: React 18 + Vite on the frontend, Claude Vision on the backend (no server of mine involved). Drop a document, get clean data. Full source code, no SaaS subscription.
+
+## The Architecture
+
+DOCR is a single-page React app. There is no backend. The Claude API is called directly from the browser with the user's own API key.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│  Drop Zone   │────▶│  5-Step      │────▶│  Claude Vision   │
+│  (drag/drop) │     │  Pipeline    │     │  API (Anthropic) │
+└─────────────┘     └──────────────┘     └─────────────────┘
+                           │                       │
+                    Animated progress       Returns JSON
+                           ▼                       ▼
+                    ┌──────────────────────────────┐
+                    │  Three Result Views           │
+                    │  Line Items │ JSON │ Metadata  │
+                    │  CSV Export │ JSON Export      │
+                    └──────────────────────────────┘
+```
+
+The pipeline stages are a UI simulation for the first three steps. The real extraction happens in step 4:
+
+```javascript
+export const PIPELINE = [
+  { id: 'preprocess', label: 'Preprocess',  sub: 'Deskew · Denoise · Contrast' },
+  { id: 'ocr',        label: 'OCR Scan',    sub: 'Tesseract WASM · SIMD · MT'  },
+  { id: 'layout',     label: 'Layout AI',   sub: 'ONNX region classifier'       },
+  { id: 'extract',    label: 'LLM Extract', sub: 'Structured field parsing'     },
+  { id: 'validate',   label: 'Validate',    sub: 'Schema + checksum verify'     },
+]
+```
+
+Steps 1-3 are timing animations to give the user feedback. Step 4 is the real API call. The pipeline component rotates through these stages while the API request is in flight.
+
+## What Claude Vision Extracts
+
+The system prompt is the key. I defined a strict JSON schema and told Claude to return only valid JSON matching it:
+
+```javascript
+const SYSTEM_PROMPT = `You are a precise invoice/document OCR extraction engine.
+Analyze the document image and return ONLY a valid JSON object — no markdown fences, no preamble, no explanation.
+
+Schema rules:
+- Use null for missing fields
+- All monetary values must be numbers (no currency symbols)
+- Dates must be YYYY-MM-DD format
+- tax_rate is a decimal (0.2 = 20%)`
+```
+
+The full schema covers: document type, vendor info, buyer info, invoice number, dates, line items (with SKU, quantity, unit price, discounts, tax), subtotals, tax lines, shipping, totals, payment terms, and bank details.
+
+The API call itself is straightforward:
+
+```javascript
+export async function extractInvoice(base64, mimeType) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: SYSTEM_PROMPT,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+          { type: 'text', text: 'Extract all structured data from this document.' },
+        ],
+      }],
+    }),
+  })
+  // parse response, strip markdown fences, return JSON
+}
+```
+
+## PDF Support via CDN Lazy-Load
+
+PDFs require rendering to an image before sending to Vision. I used PDF.js loaded lazily from CDN to avoid bloating the bundle:
+
+```javascript
+export async function renderPdfPage(file) {
+  if (!window.pdfjsLib) {
+    await new Promise((ok, fail) => {
+      const s = Object.assign(document.createElement('script'), {
+        src: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+        onload: ok, onerror: fail,
+      })
+      document.head.appendChild(s)
+    })
+    // ... set worker src
+  }
+  // render page 1 at 2.5x scale to JPEG
+}
+```
+
+The PDF is rendered at 2.5x resolution to preserve text legibility for the AI.
+
+## Three Result Views
+
+Once the extraction returns, the app shows three views:
+
+```javascript
+const [tab, setTab] = useState('items') // items | json | meta
+
+// Render based on active tab
+{tab === 'items' && <LineItemsTable items={d?.line_items} />}
+{tab === 'json' && <JsonTree data={d} />}
+{tab === 'meta' && <MetadataTable data={d} />}
+```
+
+**Line Items** — A data grid of all extracted line items with a totals panel showing subtotal, tax, shipping, and grand total.
+
+**JSON** — An interactive collapsible tree viewer with type-colored values (amber = numbers, blue = dates).
+
+**Metadata** — A flat table of all non-line-item fields: vendor name, invoice date, payment terms, bank details.
+
+Each view syncs with the same data object. No state duplication.
+
+## Freemium Gate
+
+The app tracks usage in localStorage:
+
+```javascript
+const FREE_LIMIT = 5
+const STORAGE_KEY = 'docr_v1'
+```
+
+After 5 free extractions, the upgrade modal appears with two tiers:
+- **Starter** ($19/mo) — 500 pages, webhook delivery, priority queue
+- **Growth** ($79/mo) — 2,500 pages, Google Sheets sync, 5 team seats, API access
+
+The upgrade buttons in the modal are hooks for the buyer to wire up their own Stripe subscription flow. The pricing and limits are fully configurable in the source.
+
+## The API Key Problem
+
+This is the main design constraint: Claude's API is called directly from the browser. The user's API key is exposed in the browser's dev tools. For a local development tool that runs on the user's machine, this is acceptable. For a production SaaS, you would add a lightweight proxy server between the browser and Anthropic.
+
+The app is designed as a local tool or internal workflow automation. If you need a proxy, the architecture is simple enough to add one — the API call is a single function in `api.js`.
+
+## Shipping as Source Code
+
+I priced DOCR at $29 — one-time, full React source code. You get the complete app, modify it for your use case, deploy it anywhere, and use your own API key.
+
+What you build with it:
+- Automated accounts payable workflow
+- Receipt scanning for expense reports
+- Document parsing for your own app
+- Reference implementation for Vision API extraction patterns
+
+The extraction schema is the most valuable part — the system prompt took 5 iterations to get right, and the JSON structure covers everything a bookkeeper needs.

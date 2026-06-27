@@ -1,0 +1,77 @@
+---
+title: 'Real-World Multi-Agent Workflows That Ship to Production'
+description: 'How production multi-agent systems actually work: orchestration, state, verification gates, and human approval.'
+pubDate: 2026-06-21
+author: 'Rachid Houmayni'
+category: 'AI Agents'
+readingTime: '8 min read'
+tags: ['multi-agent', 'ai-agents', 'orchestration', 'production', 'automation']
+featured: false
+coverType: 'neural'
+---
+
+Most multi-agent systems fail at the handoff layer, not the agent logic. The moment one agent hands work to another, you need explicit orchestration, persistent state, and a verification gate or you lose control of the workflow.
+
+The useful production pattern is not a swarm of agents chatting freely. It is one orchestrator, a few narrow specialists, durable state, and a gate before anything irreversible happens.
+
+## What production systems actually do
+
+Production multi-agent systems are orchestration systems first and agent systems second. The common shapes are easy to spot: a research pipeline that fetches, summarizes, and critiques; a request router that sends work to the right specialist; a code-shipping workflow that plans, implements, reviews, and tests; and a content pipeline that generates multiple drafts and selects the best one.
+
+The important distinction is control. Someone has to own the goal, the finish condition, the retries, and the failure path. In production, that role belongs to the orchestrator, not to the agents themselves.
+
+## The orchestration layer
+
+The orchestrator is where you encode the rules. It decides which agent runs next, what happens on failure, when to retry, and when to stop the workflow entirely.
+
+```
+Trigger --> Orchestrator --> Planner Agent
+                         --> Retriever Agent
+                         --> Executor Agent
+                              |
+                         Shared State Store
+                              |
+                         Verifier / Critic
+                              |
+                         Gate passed? -- No --> Orchestrator
+                              | Yes
+                         Action Layer (merge/publish/deploy/notify)
+```
+
+This is the part most demos skip. They show agent output, then jump straight to action. Real systems put a control layer in between so the workflow stays inspectable when something breaks.
+
+## The state model
+
+State is the difference between a workflow and a demo. If the system cannot persist what each agent saw, produced, and changed, you will not be able to explain failures after the fact.
+
+At minimum, persist a record like this:
+
+```json
+{
+  "job_id": "job_1842",
+  "step": "review",
+  "input": "previous step output",
+  "tool_calls": ["search", "read", "write"],
+  "result": "draft review notes",
+  "status": "pending-approval",
+  "attempt": 2
+}
+```
+
+The exact schema matters less than the discipline. Each agent step should behave like a recoverable event, not a transient thought that disappears when the context window moves on.
+
+## Verification before action
+
+Production multi-agent systems need a verification step before anything expensive or irreversible. In code workflows, that means review and tests. In enterprise workflows, that means permission checks, policy checks, and escalation rules.
+
+This is where a lot of systems fall apart. They treat model output as if it were already approved. It is not. The verifier, critic, or human approval step exists so the system can reject plausible garbage before it reaches production data, a merge button, or a deployment target.
+
+## Failure modes in production
+
+The failure mode is usually not that the model is stupid. It is that the system loses visibility once a subagent starts operating in its own context window. That is when you get silent tool failures, bad retries, prompt drift, broken permissions, and outputs that look fine until they hit production data.
+
+The fix is boring and effective: log every handoff, version your prompts and tool schemas, and make retries idempotent. If the system cannot replay what happened, it is not ready for production traffic.
+
+## The production rule
+
+The useful pattern is simple: one orchestrator, narrow subagents, persistent state, and a gate before anything irreversible. That is the shape that survives contact with production.

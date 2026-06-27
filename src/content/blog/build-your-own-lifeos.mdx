@@ -1,0 +1,219 @@
+---
+title: 'Build Your Own LifeOS: A Complete Life-Admin Operating System'
+description: 'A complete spec for building lifeOS — a local, owned, personal life-admin system with four tabs, nine AI skills, and zero vendor lock-in.'
+pubDate: 2026-06-10
+author: 'Rachid Houmayni'
+category: 'AI Agents'
+readingTime: '8 min read'
+tags: ['lifeos', 'life-admin', 'ai-agents', 'personal-os', 'claude-code', 'automation']
+featured: false
+---
+
+**Key Takeaways**
+
+- lifeOS is a local, owned, life-admin system — one dashboard with Today, Money, Admin, and Social tabs
+- Connectors pull real data (Lunch Money, Gmail, Calendar, Drive); skills process it; the dashboard renders state
+- Four hard rules: never send/pay/delete externally, nothing fictional, idempotent, no credits burned on routine
+- Nine markdown skills under `.claude/skills/` handle the work; each is a playbook Claude auto-discovers
+- The morning chain runs at 07:00 via launchd/cron — deterministic, idempotent, dedup-safe
+
+---
+
+> Paste this entire file as a single prompt to your AI agent. Claude Code is the natural fit — it has filesystem access and can build the actual scripts. Tell it: **"Build me lifeOS using this spec."** The agent will follow it and ask you only for *personal* context — your email, your family, your known renewals.
+
+---
+
+You are going to build me a personal life-admin operating system called **lifeOS**. Here's exactly what it is, exactly how it's structured, and exactly when you're done. Follow this spec. Ask only when something requires my personal context.
+
+## What lifeOS is
+
+A local, owned, personal life-admin system. One dashboard with four tabs — **Today · Money · Admin · Social**. AI preps every action to about 90% (the reading, classifying, drafting, prepping); the human approves the last 10%. The dashboard NEVER sends, pays, or deletes anything externally — Approve opens the provider's own page so I do the final tap.
+
+## The four hard rules — encode these in code, not promises
+
+1. **Never send, pay, or delete externally.** Buttons open the provider's own page. The user does the final action. No `send_*` API calls. No `delete_*` calls. No payment calls. Build a hard-coded whitelist in the action-queue skill so this can't be bypassed.
+2. **Nothing fictional.** If a pod has no real data yet, render an honest setup prompt — never a mocked card. Empty Money tab says *"connect Lunch Money to populate."* Empty Social tab says *"run onboarding to fill in your circle."*
+3. **Idempotent and dedup-safe.** Scanners can re-run any time. Every emitted action carries a `source_ref` field used for dedup (e.g. `bill:water-utility:2026-05-15`, `gmail:<message_id>`, `document:<id>`).
+4. **No credits burned on the routine.** The scheduled morning run is deterministic code reading data and rendering HTML. AI runs only when the human asks (triage, decide, draft).
+
+## The three-layer architecture
+
+```
+Connectors  →  Skills  →  Dashboard
+(real data)    (the work)  (the view)
+```
+
+- **Connectors** pull real data: Lunch Money (bank), Gmail (inbox), Google Calendar (agenda), Google Drive (PDF filing), Telegram (push).
+- **Skills** are markdown playbooks under `.claude/skills/<name>/SKILL.md`. Each has YAML frontmatter (`name:`, `description:`) so Claude auto-discovers them. Each does one job and writes state to the data layer.
+- **Dashboard** is a regenerated static HTML file served by a tiny local web server. It RENDERS state. It does not COMPUTE state.
+
+## Repo layout — build this
+
+```
+lifeOS/
+├── CLAUDE.md                  ← the operating manual for the AI agent
+├── README.md                  ← the human pitch
+├── radar.md                   ← user's tier-1 priorities (5 tiers, hand-curated)
+├── session-brief.md           ← regenerated daily by session-prep
+├── dashboard.html             ← regenerated daily by session-prep
+├── actions/                   ← one .md per pending action (the queue)
+├── context/
+│   ├── my-life.md             ← identity, household, key dates
+│   ├── my-vision.md           ← values, long-term picture
+│   └── financial-profile.md
+├── data/
+│   ├── finance.db             ← SQLite: lm_accounts, lm_transactions, bills, subscriptions, payments
+│   ├── contacts.db            ← SQLite: contacts index
+│   ├── people.json            ← circle for the Social tab
+│   ├── self_notes.json        ← triaged self-emails
+│   └── renewals.json          ← upcoming renewals surfaced from inbox
+├── memory/
+│   ├── MEMORY.md              ← curated stable facts
+│   └── logs/YYYY-MM-DD.md     ← daily session logs
+├── scripts/
+│   ├── run-morning-brief.sh   ← the scheduled chain
+│   ├── dashboard_server.py    ← local web server (port 8787)
+│   └── selftest.py            ← engine regression tests
+├── .claude/
+│   └── skills/                ← nine skill playbooks (see below)
+├── .env                       ← LUNCHMONEY_TOKEN, GOOGLE_EMAIL, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+└── .tmp/                      ← engine logs, disposable
+```
+
+The stack I used is **launchd + Python + SQLite** on macOS — but the structure works in any language. Use cron on Linux, claude.ai scheduled agents in the cloud, or whatever scheduler your OS gives you.
+
+## Action file schema — the queue
+
+Every file in `actions/` is markdown with YAML frontmatter:
+
+```markdown
+---
+type: action
+action_type: payment-intent | reply-draft | task-to-human | calendar-event | document-sign | decision-needed
+status: prepared              ← lifecycle: prepared → done | skipped | later | dropped
+created: <ISO8601 timestamp>
+priority: urgent | high | normal | low
+source_type: email | bill | document | calendar | capture
+source_ref: gmail:<msg_id>    ← unique, for dedup
+summary: <one-line headline shown on the dashboard card>
+deadline: YYYY-MM-DD          ← optional
+---
+
+# Action: <headline>
+
+## Context
+Why this action exists, what's at stake, the relevant background.
+
+## Proposed Action
+What the user approves. For `reply-draft`, this IS the email body — sendable as-is, no placeholders.
+
+## Approval
+- [ ] Approved
+- [ ] Executed
+```
+
+**Frontmatter sanitisation is critical.** A malicious email subject line containing a newline must NOT inject a new frontmatter key. Write a sanitiser and test it.
+
+## The dashboard — `dashboard.html`
+
+Single static HTML file regenerated every morning. Tabbed UI:
+
+| Tab | Shows | Data source |
+|---|---|---|
+| **Today** | The action queue (decision-ready cards), accountability sweep (anything `prepared` >14 days with a deliberately blunt nudge), 72-hour agenda, triaged self-notes, capture box | `actions/`, `self_notes.json`, calendar cache |
+| **Money** | Account balances, spending by category, recurring charges to review | `finance.db` (Lunch Money sync) |
+| **Admin** | Full open action queue + renewals surfaced from inbox | `actions/`, `renewals.json` |
+| **Social** | The user's circle, upcoming birthdays, pre-computed gift ideas | `people.json` |
+
+Each action card has four buttons that POST to `/api/action`: **Approve · Skip · Defer · Drop**. The handler rewrites the action file's `status:` field on disk. **That's the only thing the server does — status changes.** No external API calls happen in the handler.
+
+A capture box POSTs to `/api/capture` and creates a new action file (`status: prepared`, `source_type: capture`).
+
+Every action card has an **Open in Claude** link of the form `claude://claude.ai/new?q=<urlencoded prompt>` so the user can talk a task through with the AI from anywhere.
+
+When a pod has no real data, render the honest setup state for that pod — never a mocked card.
+
+## The nine skills — build each as `.claude/skills/<name>/SKILL.md`
+
+Every skill is a markdown playbook with `name:` and `description:` frontmatter. The descriptions must be specific enough that Claude knows when to invoke them.
+
+| Skill | What it does | Triggers |
+|---|---|---|
+| `action-queue` | Manages the action lifecycle: approve, execute, defer, drop. **Hard-coded whitelist** of which `action_type` can call which MCP tool. **HARD BLOCKER on any `send_*` call.** | "approve this action", "list pending actions" |
+| `calendar-intel` | Reads Google Calendar via MCP, surfaces conflicts and the 72-hour agenda, emits `decision-needed` actions when conflicts need resolving. Calendar writes only via the approval flow. | "what's coming up", "check my calendar" |
+| `document-vault` | Takes PDF attachments from email, classifies them, files them into Drive folders organised by `<Company>/<YYYY-MM>/`. Watches expiry/renewal dates and emits `task-to-human` actions when items are within 30 days. | on personal-inbox routing; "file this PDF" |
+| `notifications` | Reads `session-brief.md` and pushes it to the user's phone via the Telegram Bot API. Outbound only. | morning chain |
+| `onboarding` | Walks a new user pod by pod through connectors to wire and personal context to capture (identity, household, family, birthdays, known renewals). | "onboard me", "set up lifeOS" |
+| `personal-finance` | Syncs Lunch Money via REST API into `finance.db`. Scans manual bills and emits `payment-intent` actions for items due within 7 days. | "sync money", morning chain |
+| `personal-inbox` | Triages the personal Gmail inbox in one sweep: categorise, summarise, flag deadlines, route PDF attachments to document-vault, emit actions. **Never sends mail** (reply drafts go to Gmail Drafts; the user hits send). | "triage inbox" |
+| `relationship-intel` | Tracks the user's circle (last_contact, follow_up_due, birthdays). Emits nudge actions when relationships go stale. Not a CRM. | "log lunch with X", "any follow-ups due" |
+| `session-prep` | Reads everything (actions, finance, calendar cache, radar, people, self-notes, renewals) and renders both `session-brief.md` and `dashboard.html`. | morning chain |
+
+## The morning chain
+
+`scripts/run-morning-brief.sh` — fires at 07:00 daily from the OS scheduler (launchd on Mac, cron on Linux, claude.ai scheduled agent in the cloud). It runs the deterministic chain in this order:
+
+1. `scan_bills.py` (personal-finance) — finds bills due within 7 days → emits `payment-intent` actions
+2. `scan_expiring_docs.py` (document-vault) — finds renewals within 30 days → emits `task-to-human` actions
+3. `scan_relationships.py` (relationship-intel) — finds stale connections → emits nudge actions
+4. `sync_lunchmoney.py` (personal-finance) — pulls accounts + transactions → upserts into `finance.db`
+5. `generate_brief.py` (session-prep) — renders `session-brief.md`
+6. `generate_dashboard.py` (session-prep) — renders `dashboard.html`
+7. `send_brief.py` (notifications) — pushes brief to phone via Telegram
+
+Each step is idempotent. Each dedups on `source_ref`. The chain continues past any single step's failure. Output log: `.tmp/morning-brief.log`.
+
+## Connectors — the user authenticates each
+
+| Pod | Connector | How |
+|---|---|---|
+| Money | **Lunch Money** (~$10/mo) | User generates an API token in Lunch Money → Settings → Developers. Store in `.env` as `LUNCHMONEY_TOKEN`. Cheaper alternative: SimpleFIN Bridge (~$15/yr). |
+| Inbox / Calendar / Drive | **Google Workspace MCP** | OAuth. Use `workspace-mcp` (open source) or claude.ai's built-in MCPs. Set `GOOGLE_EMAIL` in `.env` so the skills know which account to act as. |
+| Social | none — pure local context | The user fills `data/people.json` during onboarding. |
+| Notifications | **Telegram Bot API** | User creates a bot via @BotFather, captures `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` into `.env`. |
+
+If a connector isn't wired yet, the corresponding pod renders an honest setup prompt. Never mock data.
+
+## The selftest
+
+`scripts/selftest.py` — the regression suite. Build this BEFORE you finish — it catches the regressions you'll inevitably introduce. At minimum cover:
+
+- **Action-queue dedup** — re-running a scanner with the same `source_ref` does NOT create a duplicate file
+- **Frontmatter round-trip** — write a file with all fields, read it back, every field matches
+- **Frontmatter injection resistance** — a value containing `\n` cannot inject a new top-level key (sanitisation test)
+- **Dashboard verb handler** — Approve, Skip, Defer, Drop each rewrite `status:` correctly; unknown verb returns an error; missing file returns an error
+- **Path traversal guard** — any request to `/api/action` with `..` in the action path is rejected
+- **Atomic write** — interrupted writes leave no stray `.tmp` files
+
+Run the selftest after any edit to a scanner, the shared lib, or the server.
+
+## Onboarding
+
+When the user first runs lifeOS, invoke the `onboarding` skill. It interviews them pod by pod and captures:
+
+- **Identity** — name, city/country, timezone, household members
+- **Money** — Lunch Money token (or skip if not subscribing)
+- **Admin** — known renewals (lease, insurance, AppleCare, domains, subscriptions) → writes to `renewals.json`
+- **Social** — the circle (family, close friends) — names, relations, ages, birthdays, likes, dislikes → writes to `people.json`
+- **Inbox / Calendar / Drive** — authorise the Google MCPs
+- **Notifications** — Telegram bot setup if desired
+
+A connector the user can't set up right now is fine — skip it, note it, move on. The pod stays in the honest setup state until it's wired.
+
+## Done =
+
+- All directories above exist
+- All nine `SKILL.md` files have valid YAML frontmatter (`name:` + `description:` minimum)
+- The morning chain runs end-to-end without error (run manually: `bash scripts/run-morning-brief.sh`)
+- `selftest.py` is green — every test passes
+- `dashboard.html` renders the four tabs; each pod shows real data or an honest setup prompt
+- The Approve / Skip / Defer / Drop buttons rewrite `status:` on disk. No external API calls happen in those handlers.
+- The capture box creates new action files
+- The Telegram bot pushes the morning brief to the user's phone (once configured)
+- `CLAUDE.md` describes the live system accurately so a fresh AI agent can pick up where you left off
+
+## When in doubt
+
+Ask the user for personal context (their email, their family, their renewals). Don't ask for design decisions — follow this spec.
+
+Build it.

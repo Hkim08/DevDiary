@@ -1,0 +1,149 @@
+---
+// src/components/Footer.astro
+
+const links = [
+  { label: 'Blog',  href: '/blog'   },
+  { label: 'About', href: '/about'  },
+  { label: 'RSS',   href: '/rss.xml' },
+];
+
+const socials = [
+  { label: 'GitHub',   href: 'https://github.com/Hkim08' },
+  { label: 'X/Twitter',href: 'https://x.com/Hkim08'      },
+  { label: 'Gumroad',  href: 'https://gumroad.com/rachidhakim' },
+];
+---
+
+<footer class="footer">
+  <div class="footer-inner container">
+    <div class="footer-brand">
+      <a href="/" class="footer-logo font-display">
+        Dev<span class="logo-accent">Diary</span>.uk
+      </a>
+      <p class="footer-tagline">Engineering from Agadir to global</p>
+    </div>
+
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <div class="footer-col">
+        <span class="footer-col-label font-mono">Pages</span>
+        <ul role="list">
+          {links.map((l) => (
+            <li><a href={l.href} class="footer-link">{l.label}</a></li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <span class="footer-col-label font-mono">Connect</span>
+        <ul role="list">
+          {socials.map((s) => (
+            <li>
+              <a href={s.href} target="_blank" rel="noopener" class="footer-link">
+                {s.label} ↗
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </nav>
+  </div>
+
+  <div class="footer-bottom container">
+    <p class="footer-copy font-mono">
+      © {new Date().getFullYear()} DevDiary.uk — Built with Astro · Hosted on Contabo VPS
+    </p>
+    <a href="#top" class="back-top" aria-label="Back to top">↑ Top</a>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--b1);
+    margin-top: auto;
+  }
+
+  .footer-inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-xl);
+    padding-block: var(--sp-xl);
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .footer-logo {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink2);
+  }
+  .logo-accent { color: var(--v); }
+
+  .footer-tagline {
+    font-size: 12px;
+    color: var(--ink3);
+  }
+
+  .footer-nav {
+    display: flex;
+    gap: 48px;
+  }
+
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .footer-col-label {
+    font-size: 10.5px;
+    color: var(--ink3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .footer-col ul {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .footer-link {
+    font-size: 13px;
+    color: var(--ink3);
+    transition: color 0.14s;
+  }
+  .footer-link:hover { color: var(--ink2); }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 16px;
+    border-top: 1px solid var(--b1);
+  }
+
+  .footer-copy {
+    font-size: 11px;
+    color: var(--ink3);
+  }
+
+  .back-top {
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink3);
+    transition: color 0.14s;
+  }
+  .back-top:hover { color: var(--v2); }
+
+  @media (max-width: 640px) {
+    .footer-inner { flex-direction: column; }
+    .footer-nav { gap: 32px; }
+  }
+</style>

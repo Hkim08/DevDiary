@@ -1,0 +1,17 @@
+---
+title: 'Replacing NLP Pipelines with LLM Agents: MIS v2 Architecture'
+description: "Why I scrapped spaCy and Hugging Face for a Batch-and-Specialize pattern using Gemini's 1M context window — 40% faster, half the code."
+pubDate: 2024-11-15
+author: 'Rachid Houmayni'
+category: 'Machine Learning'
+readingTime: '5 min read'
+tags: ['nlp', 'llm-agents', 'machine-learning', 'architecture']
+featured: false
+coverType: 'radar'
+---
+
+For years, the standard NLP pipeline looked like this: spaCy for NER, Hugging Face for classification, a custom regex layer for extraction, and a rules engine for routing. It worked, but it was brittle. Every new document type required new rules. Every edge case demanded a new training set.
+
+The MIS v2 architecture replaces that entire stack with a Batch-and-Specialize pattern powered by LLM agents. Instead of a dozen microservices each doing one NLP task, a single Gemini agent with a 1M context window processes entire documents in one pass — classifying, extracting, and routing in a single inference call.
+
+The result: 40% faster throughput, half the code, and dramatically lower maintenance burden.

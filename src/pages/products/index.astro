@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import { products } from '../../data/products';
+import '../../styles/global.css';
+
+const productList = products;
+---
+
+<BaseLayout
+  title="Products — DevDiary.uk"
+  description="Digital products by Rachid — Claude Code configs, dashboards, CRM tools, and AI agent scaffolds for developers and consultants."
+>
+  <Nav />
+
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <p class="section-label">// digital products</p>
+        <h1 class="page-title">Products & Tools</h1>
+        <p class="page-desc">One-time purchase, no subscriptions. Everything is a real tool I built for my own work — packaged so you can skip the hours I spent debugging it.</p>
+      </div>
+    </section>
+
+    <div class="container" style="padding-bottom:80px">
+      <div class="products-page-grid">
+        {productList.map(p => (
+          <article class="product-page-card" onclick={`window.location='/products/${p.slug}'`} role="link" tabindex="0" onkeydown={`if(event.key==='Enter')window.location='/products/${p.slug}'`}>
+            {p.badge && <div class="product-page-badge">{p.badge}</div>}
+            <div class="product-page-header">
+              <span class="tag tag-default">{p.category}</span>
+            </div>
+            <h2 class="product-page-name">{p.name}</h2>
+            <p class="product-page-tagline">{p.tagline}</p>
+            <p class="product-page-desc">{p.desc}</p>
+            <ul class="product-features">
+              {p.features.map(f => (<li><span class="feature-check" aria-hidden="true">✓</span>{f}</li>))}
+            </ul>
+            <div class="product-page-footer">
+              <div class="product-page-price">
+                <span class="price-big">${p.price}</span>
+                <span class="price-suffix">USD · one-time</span>
+              </div>
+              <a href={p.gumroadUrl} target="_blank" rel="noopener noreferrer" class="btn btn-primary" onclick="event.stopPropagation()">Buy on Gumroad →</a>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div class="guarantee-banner">
+        <span class="guarantee-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--v2)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </span>
+        <div>
+          <strong>30-day money-back guarantee</strong>
+          <p>If a product doesn't deliver value, email me and I'll refund you. No questions.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<style>
+.page-hero { padding: 56px 0 40px; }
+.page-title { font-family: var(--heading); font-weight: 700; font-size: 42px; color: var(--ink); margin: 8px 0 12px; letter-spacing: -0.03em; }
+.page-desc { color: var(--ink2); font-size: 15px; max-width: 560px; line-height: 1.6; }
+.products-page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; padding-top: 8px; }
+.product-page-card { background: var(--bg2); border: 1px solid var(--b1); border-radius: var(--r-lg); padding: 28px; display: flex; flex-direction: column; gap: 12px; position: relative; transition: border-color var(--transition), transform var(--transition); cursor: pointer; }
+.product-page-card:hover { border-color: rgba(139,121,255,.3); transform: translateY(-2px); }
+.product-page-badge { position: absolute; top: 16px; right: 16px; font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 4px; background: rgba(245,158,11,.15); color: var(--amber); letter-spacing: .03em; }
+.product-page-name { font-family: var(--heading); font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+.product-page-tagline { font-size: 14px; color: var(--v2); font-weight: 500; }
+.product-page-desc { font-size: 14px; color: var(--ink2); line-height: 1.65; }
+.product-features { list-style: none; display: flex; flex-direction: column; gap: 7px; padding: 4px 0; flex: 1; }
+.product-features li { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; color: var(--ink2); }
+.feature-check { color: var(--teal); font-weight: 700; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.product-page-footer { display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid var(--b1); flex-wrap: wrap; }
+.product-page-price { display: flex; align-items: baseline; gap: 6px; }
+.price-big { font-family: var(--heading); font-size: 28px; font-weight: 700; color: var(--teal); letter-spacing: -0.03em; }
+.price-suffix { font-size: 12px; color: var(--ink3); }
+.guarantee-banner { margin-top: 40px; background: var(--bg3); border: 1px solid var(--b1); border-radius: var(--r-lg); padding: 24px 28px; display: flex; align-items: flex-start; gap: 18px; }
+.guarantee-banner strong { font-size: 15px; color: var(--ink); display: block; margin-bottom: 4px; }
+.guarantee-banner p { font-size: 13.5px; color: var(--ink2); }
+</style>

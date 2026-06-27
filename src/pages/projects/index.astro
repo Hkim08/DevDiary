@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import { projects } from '../../data/projects';
+import '../../styles/global.css';
+
+const statusLabel: Record<string, string> = { active: 'Active', released: 'Released', wip: 'WIP', archived: 'Archived' };
+const statusColor: Record<string, string> = { active: 'var(--teal)', released: 'var(--v2)', wip: 'var(--amber)', archived: 'var(--ink3)' };
+---
+
+<BaseLayout
+  title="Projects — DevDiary.uk"
+  description="Open-source tools, agents, and frameworks built by Rachid — AI agent runtimes, ERP scaffolds, invoice tools, and dashboards."
+>
+  <Nav />
+
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <p class="section-label">// open source</p>
+        <h1 class="page-title">Projects</h1>
+        <p class="page-desc">Tools built while solving real problems. All open source, all shipped — not just demos.</p>
+        <a href="https://github.com/Hkim08" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="margin-top:20px">GitHub Profile ↗</a>
+      </div>
+    </section>
+
+    <div class="container" style="padding-bottom:80px">
+      <div class="projects-grid">
+        {projects.map(p => (
+          <article class="project-card">
+            <div class="project-header">
+              <span class="project-icon">{p.icon}</span>
+              <div class="project-status" style={`color:${statusColor[p.status]}`}>
+                <span class="status-dot" style={`background:${statusColor[p.status]}`}></span>
+                {statusLabel[p.status]}
+              </div>
+            </div>
+            <h2 class="project-name">{p.name}</h2>
+            <p class="project-tagline">{p.tagline}</p>
+            <p class="project-desc">{p.desc}</p>
+            <div class="project-tags">{p.tags.map(t => <span class="tag tag-default">{t}</span>)}</div>
+            <div class="project-links">
+              {p.github && <a href={p.github} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="font-size:13px;padding:7px 14px">GitHub ↗</a>}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<style>
+.page-hero { padding: 56px 0 40px; }
+.page-title { font-family: var(--heading); font-weight: 700; font-size: 42px; color: var(--ink); margin: 8px 0 12px; letter-spacing: -0.03em; }
+.page-desc { color: var(--ink2); font-size: 15px; max-width: 560px; line-height: 1.6; }
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-top: 8px; }
+.project-card { background: var(--bg2); border: 1px solid var(--b1); border-radius: var(--r-lg); padding: 24px; display: flex; flex-direction: column; gap: 10px; transition: border-color var(--transition), transform var(--transition); }
+.project-card:hover { border-color: rgba(139,121,255,.3); transform: translateY(-2px); }
+.project-header { display: flex; justify-content: space-between; align-items: center; }
+.project-icon { font-size: 28px; }
+.project-status { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; font-weight: 600; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; }
+.project-name { font-family: var(--heading); font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+.project-tagline { font-size: 13px; color: var(--v2); font-weight: 500; }
+.project-desc { font-size: 13.5px; color: var(--ink2); line-height: 1.6; flex: 1; }
+.project-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.project-links { display: flex; gap: 10px; margin-top: 6px; }
+</style>

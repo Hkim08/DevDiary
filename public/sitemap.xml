@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://devdiary.uk/</loc><priority>1.0</priority></url>
+  <url><loc>https://devdiary.uk/blog/</loc><priority>0.9</priority></url>
+  <url><loc>https://devdiary.uk/about/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/building-arc-erp-agent/</loc><priority>0.8</priority></url>
+  <url><loc>https://devdiary.uk/blog/building-ai-agent-systems/</loc><priority>0.8</priority></url>
+  <url><loc>https://devdiary.uk/blog/replacing-nlp-with-llm-agents/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/personal-claude-os/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/technical-founder-prompt-stack/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/claude-code-complete-mastery-guide/</loc><priority>0.8</priority></url>
+  <url><loc>https://devdiary.uk/blog/claude-code-personal-os-guide/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/dag-vs-sequential-agent-execution/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/openclaw-2026-setup-tutorial/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/build-ai-chief-of-staff-claude-code-guide/</loc><priority>0.8</priority></url>
+  <url><loc>https://devdiary.uk/blog/mcp-server-production-configuration/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/build-your-own-lifeos/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/browser-native-micro-saas-ideas/</loc><priority>0.7</priority></url>
+  <url><loc>https://devdiary.uk/blog/docr-invoice-ocr-claude-vision/</loc><priority>0.7</priority></url>
+</urlset>

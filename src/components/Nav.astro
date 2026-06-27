@@ -1,0 +1,159 @@
+---
+// src/components/Nav.astro
+const navLinks = [
+  { label: 'Blog', href: '/blog' },
+  { label: 'Projects', href: '/projects' },
+  { label: 'Products', href: '/products' },
+  { label: 'About', href: '/about' },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<nav class="nav" id="main-nav">
+  <div class="nav-inner container">
+    <a href="/" class="logo" aria-label="DevDiary.uk home">
+      Dev<span class="logo-accent">Diary</span>.uk
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-menu">
+      <span class="burger"></span>
+      <span class="burger"></span>
+      <span class="burger"></span>
+    </button>
+
+    <ul class="nav-links" id="nav-menu" role="list">
+      {navLinks.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            class:list={['nav-link', { active: currentPath.startsWith(link.href) }]}
+          >
+            {link.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="nav-right">
+      <a href="https://github.com/Hkim08" target="_blank" rel="noopener" class="btn btn-ghost nav-btn">
+        GitHub ↗
+      </a>
+      <a href="#newsletter" class="btn btn-primary nav-btn">
+        Subscribe →
+      </a>
+    </div>
+  </div>
+</nav>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8, 8, 12, 0.88);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--b1);
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-lg);
+    height: 58px;
+    max-width: var(--max-w);
+  }
+
+  .logo {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 15.5px;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .logo-accent { color: var(--v); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .nav-link {
+    font-size: 13.5px;
+    font-weight: 450;
+    color: var(--ink3);
+    padding: 6px 10px;
+    border-radius: var(--r-sm);
+    transition: color 0.14s, background 0.14s;
+  }
+  .nav-link:hover { color: var(--ink2); background: var(--bg3); }
+  .nav-link.active { color: var(--ink); }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .nav-btn {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+
+  /* Mobile toggle — hidden on desktop */
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    background: none;
+    border: none;
+    padding: 6px;
+    margin-left: auto;
+  }
+  .burger {
+    display: block;
+    width: 20px;
+    height: 1.5px;
+    background: var(--ink2);
+    border-radius: 2px;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+
+  @media (max-width: 768px) {
+    .nav-toggle { display: flex; }
+    .nav-right { display: none; }
+
+    .nav-links {
+      display: none;
+      position: absolute;
+      top: 58px;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--b2);
+      padding: 8px 0;
+      margin-left: 0;
+    }
+
+    .nav-links.open { display: flex; }
+    .nav-link { padding: 12px 24px; border-radius: 0; font-size: 15px; }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector('.nav-toggle') as HTMLButtonElement;
+  const menu = document.getElementById('nav-menu');
+
+  toggle?.addEventListener('click', () => {
+    const isOpen = menu?.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(isOpen));
+  });
+</script>

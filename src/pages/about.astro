@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+---
+
+<BaseLayout title="About — DevDiary.uk" description="About Rachid Houmayni — solo ERP consultant building AI agent systems, Claude Code workflows, and AI-native products from Agadir.">
+  <Nav />
+
+  <main id="main" class="about-page">
+    <div class="container">
+      <header class="about-header">
+        <p class="section-label">// about</p>
+        <h1>Building in public<br />from Agadir</h1>
+      </header>
+
+      <div class="about-content">
+        <div class="about-card">
+          <div class="about-avatar" aria-hidden="true">R</div>
+          <h2>Rachid Houmayni</h2>
+          <p class="about-role">ERP Consultant · AI Engineer · Solo Builder</p>
+          <p>
+            I build AI agent systems for ERP consulting workflows. Phase-gated autonomous agents, 
+            SQLite knowledge bases, and multi-agent orchestration that ships to real clients — 
+            not demos that collapse under real workloads.
+          </p>
+          <p>
+            I write about what actually works: agent memory architectures, production MCP configuration, 
+            Claude Code personal OS setups, and the honest numbers behind shipping digital products solo.
+          </p>
+          <p>
+            Based in Agadir, Morocco. Building DevDiary.uk, the BAO Scaffold, and the Personal Claude OS.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<style>
+  .about-page { padding: 48px 0 80px; }
+  .about-header { padding-top: var(--sp-lg); padding-bottom: var(--sp-xl); }
+  .about-header h1 { margin-bottom: 0; }
+  .about-content { max-width: 920px; margin: 0 auto; }
+  .about-card {
+    background: var(--bg2);
+    border: 1px solid var(--b1);
+    border-radius: var(--r-lg);
+    padding: 36px;
+  }
+  .about-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--v), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #fff; font-weight: 700;
+    margin-bottom: 18px;
+  }
+  .about-card h2 {
+    font-size: 24px; margin-bottom: 4px; color: var(--ink);
+  }
+  .about-role {
+    font-family: var(--mono); font-size: 12px; color: var(--ink3);
+    margin-bottom: 20px; letter-spacing: 0.04em;
+  }
+  .about-card p {
+    font-size: 15px; color: var(--ink2); line-height: 1.7; margin-bottom: 14px;
+  }
+  .about-card p:last-child { margin-bottom: 0; }
+</style>

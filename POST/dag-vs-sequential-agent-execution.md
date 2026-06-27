@@ -1,0 +1,177 @@
+---
+title: "DAG vs Sequential Agent Execution: When to Parallelize"
+description: "Sequential agent pipelines are the default — and the wrong choice for most production systems. Here's how to read the dependency structure and pick the right execution model."
+slug: "dag-vs-sequential-agent-execution"
+tags: ["ai-agents", "multi-agent-orchestration", "dag", "python", "agentic-workflow"]
+readingTime: "8 min read"
+publishDate: "2026-06-16"
+---
+
+Sequential agent pipelines fail in predictable ways. You build a four-stage pipeline — extract, validate, enrich, summarise — and it works fine until stage two takes 45 seconds and stages three and four sit idle waiting for it. You've serialized work that didn't need to be serialized. You're paying twice: in latency and in API cost, because the context window from stage two gets passed in full to stage three whether it needs all of it or not.
+
+The fix isn't exotic. It's a directed acyclic graph: a dependency map that makes explicit which agents must wait for which, and which can run in parallel. Most developers who haven't worked with DAG execution default to sequential out of habit, not necessity. This post is about reading your dependency structure clearly enough to know which one you actually need.
+
+## The real cost of unnecessary serialization
+
+The MIS v2 rebuild made this concrete. The original NLP pipeline processed documents one stage at a time: entity extraction, then sentiment, then intent classification. 247 API calls for 100 documents. Total latency: 4.2 minutes.
+
+The replacement uses a DAG. Three specialist agents run in parallel against the same input batch — PainAgent, TrendAgent, CompetitorAgent — and a fourth synthesis agent runs after all three complete. Five API calls. 38 seconds. Same output quality.
+
+That's an 85% latency reduction from one architectural change. The work didn't change. The sequencing did.
+
+The sequential version worked. It was just wrong for the dependency structure of the problem. Entity extraction doesn't depend on sentiment. Sentiment doesn't depend on entity extraction. They can run simultaneously. Making them wait for each other is a choice, and it's the wrong one.
+
+## How to read your dependency structure
+
+Before writing any orchestration code, draw the dependency graph on paper (or in your head). For each agent:
+
+1. What inputs does it need?
+2. Which other agents produce those inputs?
+3. Can it start before any other agent finishes?
+
+The answers cluster into two shapes:
+
+**Linear dependencies** — Agent B needs Agent A's output. Agent C needs Agent B's output. There's a strict ordering you can't escape. Sequential execution is correct here.
+
+**Fan-out/fan-in** — Multiple agents need the same input, and a later agent needs all of their outputs. These independent agents can run in parallel. A join point waits for all of them before proceeding.
+
+Most real pipelines are neither purely linear nor purely parallel — they're a mix. The DAG is just a way to be precise about which parts must serialize and which parts don't need to.
+
+Here's a concrete example. A client ERP audit pipeline has these stages:
+
+```
+Raw client data
+    ├── FinancialAgent     (reads raw data → financial report)
+    ├── OperationsAgent    (reads raw data → ops report)
+    └── ComplianceAgent    (reads raw data → compliance flags)
+                 ↓
+           SynthesisAgent  (reads all three → executive summary)
+```
+
+The first three agents share the same input and produce independent outputs. The fourth can't run until all three finish. That's a textbook DAG: one fan-out, one join, one fan-in.
+
+## Implementing the DAG pattern in Python
+
+The implementation uses `asyncio.gather` to run independent agents concurrently and waits at the join points.
+
+```python
+import asyncio
+from dataclasses import dataclass
+
+@dataclass
+class RawData:
+    client_id: str
+    documents: list[str]
+
+async def run_audit_pipeline(data: RawData) -> dict:
+    # Phase 1: independent agents run in parallel
+    financial, operations, compliance = await asyncio.gather(
+        financial_agent.analyse(data),
+        operations_agent.analyse(data),
+        compliance_agent.analyse(data),
+    )
+
+    # Phase 2: synthesis depends on all three — can't start until the join resolves
+    summary = await synthesis_agent.consolidate(
+        financial=financial,
+        operations=operations,
+        compliance=compliance,
+    )
+
+    return {
+        "financial": financial,
+        "operations": operations,
+        "compliance": compliance,
+        "summary": summary,
+    }
+```
+
+`asyncio.gather` is the join point. It blocks until all three agents return, then passes their results downstream. If any of the three fails, the gather raises the exception and the pipeline stops — which is the right default behaviour. You don't want a synthesis agent running on incomplete data.
+
+For larger DAGs with more complex dependencies, you can make the structure explicit:
+
+```python
+async def run_dag(data: RawData) -> dict:
+    # Group 1: no dependencies — all start immediately
+    group_1 = await asyncio.gather(
+        agent_a.run(data),
+        agent_b.run(data),
+        agent_c.run(data),
+    )
+    a_out, b_out, c_out = group_1
+
+    # Group 2: agent_d needs a_out and b_out; agent_e needs c_out only
+    # These can still run in parallel — different dependency sets, no overlap
+    group_2 = await asyncio.gather(
+        agent_d.run(a_out, b_out),
+        agent_e.run(c_out),
+    )
+    d_out, e_out = group_2
+
+    # Group 3: final synthesis needs everything
+    return await agent_f.run(d_out, e_out)
+```
+
+This is still a DAG — three phases, but phases 1 and 2 both contain parallel work. The key is that each `await asyncio.gather(...)` call is a synchronization point: nothing in the next line runs until everything in the gather resolves.
+
+## When sequential execution is actually correct
+
+Sequential is right when the dependency is real — when each stage genuinely needs the previous stage's output to do its job.
+
+The clearest example: an agentic writing pipeline where a planner agent produces an outline, a writer agent produces a draft from that outline, and an editor agent reviews the draft. Each stage has a hard input dependency on the previous one. There's nothing to parallelize. Trying to run the writer and planner simultaneously is meaningless — the writer has nothing to work with.
+
+```python
+async def writing_pipeline(brief: str) -> str:
+    # Strict dependency chain — sequential is correct
+    outline = await planner_agent.create_outline(brief)
+    draft = await writer_agent.write(outline)
+    final = await editor_agent.review(draft)
+    return final
+```
+
+Sequential is also correct when your agents share mutable state that would produce race conditions in parallel. If three agents write to the same SQLite table and their writes need to be ordered (phase 1 rows before phase 2 rows), parallel execution creates conflicts you'll spend hours debugging. Serialize it.
+
+The failure mode to avoid: defaulting to sequential because it's simpler to implement, then discovering six months later that your pipeline takes three minutes when it could take 40 seconds.
+
+## The practical decision rule
+
+Run this check before writing any orchestration code:
+
+**Can agent B start before agent A finishes?**
+
+- If no (B needs A's output): they must be sequential.
+- If yes (B and A read the same input or independent inputs): they should be parallel.
+
+Apply this check to every pair of agents in your pipeline. The result is your dependency graph. Agents with no dependency edges between them run in the same `asyncio.gather` group. Agents with dependency edges run in sequence.
+
+One more consideration: error handling. Sequential pipelines fail cleanly — stage N fails, pipeline stops, you know exactly where. DAG pipelines fail at the gather point, which means one of three parallel agents failed and you need to identify which one. Build explicit logging into each agent's error path:
+
+```python
+async def safe_run(agent, *args, label: str) -> tuple[str, any]:
+    try:
+        result = await agent.run(*args)
+        return label, result
+    except Exception as e:
+        raise RuntimeError(f"{label} failed: {e}") from e
+
+# Gather with labeled results for clean error identification
+results = await asyncio.gather(
+    safe_run(financial_agent, data, label="financial"),
+    safe_run(operations_agent, data, label="operations"),
+    safe_run(compliance_agent, data, label="compliance"),
+)
+```
+
+When the gather fails, the `RuntimeError` message tells you exactly which agent broke and why. Without this, you're reading a traceback to figure out which of three concurrent tasks raised.
+
+## What this means for your current pipeline
+
+If you have an agentic pipeline and you haven't drawn the dependency graph, do it now. Not to refactor everything — to find out whether you're serializing work that doesn't need to be serialized.
+
+The MIS v2 result (247 calls → 5, 4.2 minutes → 38 seconds) isn't an edge case. It's what happens when you match the execution model to the actual dependency structure instead of using the first thing that worked.
+
+Sequential is a valid choice. It's just rarely the right one for multi-stage systems where agents can read the same inputs independently. If your agents are waiting for each other without a genuine dependency, they're waiting for nothing — and your users are waiting too.
+
+---
+
+For the full agent system architecture this sits inside, see the [AI Agent Systems pillar](/posts/building-ai-agent-systems/). For how state management handles failures across parallel runs, the next spoke covers [AI Agent State Management](/posts/ai-agent-state-management/).

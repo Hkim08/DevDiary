@@ -1,0 +1,156 @@
+---
+title: 'MCP Server Configuration: The Production Patterns I Actually Run'
+description: 'Production MCP server configuration for Claude Code. 7 servers, one .mcp.json, context-aware chaining, and the decision tree for adding or removing each one.'
+pubDate: 2026-06-26
+author: 'Rachid Houmayni'
+image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200'
+category: 'Tutorials'
+readingTime: '10 min read'
+tags: ['mcp', 'claude-code', 'configuration', 'production', 'tool-chaining', 'devops']
+featured: false
+---
+
+Most MCP server configuration guides ship toy examples. Here is the production `.mcp.json` I actually run — Context7, Playwright, GitHub, database, and three more — with context-cost analysis, wiring decisions, and the exact configs.
+
+Anthropic archived their reference MCP servers (GitHub, PostgreSQL, Slack) in May 2025. The third-party ecosystem has filled the gap — Playwright MCP has more GitHub stars than any Anthropic server ever had, GitHub shipped their own Go-based implementation, and Stripe, Supabase, and Neon all have official servers with OAuth. But the wiring is still fragmented. Most guides show one server in isolation. Real projects run 5–10 servers with overlapping tool schemas and competing context budgets.
+
+I run ContentOS v3 — a 5-agent content orchestration system — on Claude Code. It uses 7 MCP servers across research, publishing, monitoring, and deployment workflows. Here is the exact wiring, why each server earns its context cost, and the decision tree I use before adding any new one.
+
+## Why One Config File Fails at Scale
+
+The `claude mcp add` command creates a single user-level config. That works for two servers. At seven, the tool namespace gets crowded, servers with HTTP transport add latency to every turn, and servers that were useful in last week's project bloat this week's context window.
+
+```bash
+claude mcp list
+# Output shows all 7 servers with their tool counts:
+# context7   — 3 tools  (stdio)
+# playwright — 18 tools (stdio)
+# github     — 12 tools (http)
+# filesystem — 8 tools  (stdio)
+# supabase   — 6 tools  (http)
+# slack      — 7 tools  (http)
+# notion     — 5 tools  (http)
+# Total: 59 tool schemas loaded into every session
+```
+
+59 tool schemas competing with your project instructions. That is the problem.
+
+The fix is three patterns I apply to every MCP wiring:
+
+**Project-scoped configs.** `.mcp.json` at the project root keeps MCP servers local to the workflow that needs them. ContentOS gets different servers than a blog post repo. No cross-project contamination.
+
+**Transport selection by latency budget.** stdio servers add near-zero overhead. HTTP servers (remote MCP) add 200–800ms per tool call. I put only high-value remote servers in the active config: ones that return structured data I cannot get from a CLI command.
+
+**Context-cost budgeting.** Each MCP server exposes 5–20 tool schemas that Claude must load into context. At 7 servers, that is 60+ tool definitions competing with my instructions. I track the cost and rotate servers in and out per session.
+
+## The 7-Server Config
+
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@context7/mcp-server"]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.github.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}"
+      }
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "env": {
+        "ALLOWED_DIRS": "${WORKSPACE_DIR}"
+      }
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/v1",
+      "headers": {
+        "Authorization": "Bearer ${SUPABASE_KEY}"
+      }
+    },
+    "slack": {
+      "type": "http",
+      "url": "https://mcp.slack.com/v1",
+      "headers": {
+        "Authorization": "Bearer ${SLACK_TOKEN}"
+      }
+    },
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/v1",
+      "headers": {
+        "Authorization": "Bearer ${NOTION_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+The pattern: stdio for local tools that I use every session (Context7, Playwright), HTTP for services that need auth and remote access (GitHub, Supabase, Slack, Notion), and one filesystem server scoped to the workspace.
+
+## Context-Cost Analysis per Server
+
+Each server costs tokens to load and tokens per call. Here is the actual breakdown from ContentOS:
+
+| Server | Tools Exposed | Context Cost | Avg Latency | When I Skip It |
+|--------|-------------|-------------|-------------|-----------------|
+| Context7 | 3 (search, fetch, read) | ~80 tokens | stdio — 10ms | When the task is pure code generation with no library documentation need |
+| Playwright | 18 (navigate, click, screenshot, fill, etc.) | ~600 tokens | stdio — 15ms | When the task has no UI or visual verification step |
+| GitHub | 12 (PR, issues, code search, actions, releases) | ~400 tokens | HTTP — 350ms | When I use `gh` CLI instead — saves context and latency |
+| Filesystem | 8 (read, write, search, list, move, copy, delete, info) | ~250 tokens | stdio — 5ms | When the built-in Claude Code file tools are sufficient |
+| Supabase | 6 (query, schema, branch, migrate, seed, backup) | ~200 tokens | HTTP — 500ms | When the session does not touch the database |
+| Slack | 7 (messages, channels, users, search, reactions, files, threads) | ~220 tokens | HTTP — 400ms | When notifications can be async |
+| Notion | 5 (pages, databases, blocks, search, comments) | ~180 tokens | HTTP — 450ms | When I am not touching the content system |
+
+Context7 and Filesystem stay always-on because their cost is low and I use them every session. Playwright and GitHub are high-cost but high-value — I gate them per session. Slack and Notion are always disabled by default; I enable them only when the task explicitly needs them.
+
+## The Decision Tree for Production Configuration
+
+Before adding any MCP server to the active config, I run this check:
+
+```
+1. Can Claude do this with a CLI command?                      → Skip MCP. Use bash.
+2. Does the MCP server provide structured data the CLI cannot? → Continue.
+3. Does the tool schema add >200 tokens to context?            → Consider per-session enable only.
+4. Is the server maintained (commits in last 90 days)?         → If no, skip.
+5. Does the server have OAuth or scoped auth?                  → If no, skip for remote servers.
+```
+
+Rule 1 eliminates most servers. Claude Code can run `gh pr create`, `gh issue list`, and `gh pr review` via bash with zero extra context cost. The GitHub MCP server is only worth it when I need batch operations across multiple PRs or structured data pulled into analysis context. Same for database servers — `psql -c "SELECT ..."` via bash is often cheaper than loading a Postgres MCP schema.
+
+Rule 4 is the one most wiring guides skip. Anthropic archived their reference servers. Several popular community servers are unmaintained. If the last commit was 8 months ago, it will break on the next Claude Code update.
+
+## Switching Configuration Profiles per Session
+
+I keep three `.mcp.json` files in the project and symlink the active one:
+
+```bash
+.mcp/
+├── default.json      # Context7 + Filesystem only — daily driver
+├── full.json         # All 7 servers — content pipeline sessions
+└── deploy.json       # GitHub + Supabase — deployment sessions
+```
+
+Before a session starts, I run:
+
+```bash
+ln -sf .mcp/full.json .mcp.json
+```
+
+And Claude loads only the servers that session needs. This dropped my average context overhead from ~1,900 tokens to ~330 tokens for daily sessions. The full suite loads only when the task justifies the cost.
+
+You can copy the configs above into your own `.mcp.json` today. The context-cost table gives you the numbers to decide what belongs in your daily driver versus your full suite.
+
+What I would add next: a server for agent-to-agent communication once the protocol stabilises across clients. That is the piece still missing from every production wiring I have seen.

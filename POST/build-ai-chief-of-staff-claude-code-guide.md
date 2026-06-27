@@ -1,0 +1,900 @@
+---
+title: 'Build Your AI Chief of Staff: A Complete Claude Code Personal OS Guide'
+description: 'A step-by-step blueprint for building a localized, self-improving cognitive workspace with Claude Code — from environment setup and MCP connections to auto-dreaming and parallel sessions.'
+pubDate: 2026-06-08
+author: 'Rachid Houmayni'
+image: 'https://images.unsplash.com/photo-1531746790095-e5cb157171d6?w=1200'
+category: 'Tutorials'
+subCategory: 'Claude Code'
+readTime: '12 min read'
+tags: ['claude-code', 'tutorial', 'ai-agents', 'products']
+---
+
+**Your AI isn't broken. You're just using it wrong.**
+
+Most professionals interact with AI the way they checked a dictionary in 1995 — open it, ask a question, close it, forget it. You get a clever answer, then tab back to your fragmented mess of Notion pages, Slack threads, and half-finished meeting notes.
+
+This is the chatbot plateau. In 2026, it's the biggest competitive liability you can have.
+
+A **Claude Code Personal OS** ends the plateau. It is a localized, self-improving cognitive workspace that runs directly on your machine — reading your files, executing tasks, learning your preferences, and compounding your professional intelligence across every session. It's not a chat tool; it's your AI Chief of Staff.
+
+This guide gives you the complete blueprint: architecture, installation, configuration, and optimization — step by step.
+
+> **Note:** This is the comprehensive how-to guide. If you want a 10-minute quick start instead, see [Claude Code Personal OS: 10-Minute Quick Start Setup](/blog/claude-code-personal-os-guide/). For the personal story behind my `~/.claude/` configuration, read [Personal Claude OS: How I Turned ~/.claude/ Into a Portable Productivity System](/blog/personal-claude-os/).
+
+---
+
+## Table of Contents
+
+1. [What Is a Personal OS in the AI Era?](#what-is-a-personal-os)
+2. [Why Claude Code Is the Right Engine](#why-claude-code)
+3. [System Architecture Overview](#system-architecture)
+4. [Step 1 — Environment Provisioning](#step-1-environment)
+5. [Step 2 — Installation & Authentication](#step-2-installation)
+6. [Step 3 — Workspace Scaffolding](#step-3-scaffolding)
+7. [Step 4 — Building Your CLAUDE.md Constitution](#step-4-constitution)
+8. [Step 5 — Connecting External Tools via MCP](#step-5-mcp)
+9. [Step 6 — Creating Custom Skills & Automation](#step-6-skills)
+10. [Step 7 — Context Hygiene & Memory Management](#step-7-memory)
+11. [Step 8 — Security Hardening](#step-8-security)
+12. [Advanced: Auto-Dreaming & Knowledge Compounding](#auto-dreaming)
+13. [Advanced: Scaling with Parallel Sessions](#scaling)
+14. [Real-World Use Cases](#use-cases)
+15. [The 90-Day Fluency Roadmap](#roadmap)
+16. [Quick Reference: Commands & Templates](#quick-reference)
+
+---
+
+## What Is a Personal OS in the AI Era? {#what-is-a-personal-os}
+
+A **Personal OS** is not another productivity app. It is a localized agentic environment built on plain-text Markdown files stored directly on your local machine. Instead of your knowledge living in isolated cloud databases across a dozen SaaS portals, it compounds in one place — and an AI agent manages, references, and extends it every day.
+
+Three things distinguish it from a standard chat interface:
+
+**Local-first knowledge.** Every meeting note, project decision, and personal preference lives on your filesystem as readable Markdown. Your AI doesn't need you to "paste context" because it already has access to all of it.
+
+**Persistent memory.** A standard chatbot forgets everything the moment you close the tab. A Personal OS maintains explicit memory files (`CLAUDE.md`, `MEMORY.md`, `GOALS.md`) that carry context across every session — forever.
+
+**Deterministic execution.** The agent doesn't just suggest; it *acts*. It writes files, runs terminal commands, syncs tasks, and self-corrects when something breaks, all without you watching over its shoulder.
+
+Your role in this system changes fundamentally. You stop being a **manual executioner** — the person who copy-pastes, follows up, and updates task lists — and become an **orchestrator** who sets strategic direction while the agent handles mechanical translation.
+
+---
+
+## Why Claude Code Is the Right Engine {#why-claude-code}
+
+Claude Code is not a code editor plugin or a chat assistant with filesystem access bolted on. It is an **agentic computing system** that operates at the project level.
+
+Here is what that distinction means in practice:
+
+| Feature | Traditional AI Chatbot | Claude Code (Agentic OS) |
+|---|---|---|
+| **Scope** | One prompt at a time | Entire local project directory |
+| **Execution** | Suggests text for you to copy | Directly edits files, runs commands |
+| **Validation** | You verify every line | Runs tests and self-corrects until they pass |
+| **Persistence** | Forgets after tab closes | Compounds knowledge in local Markdown files |
+| **Tool Access** | None | Git, npm, bash, MCP servers, APIs |
+
+The key capability is the **Reasoning-Action-Observation loop**: Claude Code reads your directory, maps dependencies, proposes a plan, executes it, observes what happened (including errors), and corrects course — all without constant human prompting. When it fails a test, it reads the error log and tries again. It doesn't stop and ask you what to do.
+
+This closed-loop behavior crossed what practitioners call the **"Threshold of Coherence"** in late 2025 — the point at which AI became reliable enough for extended unattended work. You are building on that foundation.
+
+---
+
+## System Architecture Overview {#system-architecture}
+
+Before you write a single configuration file, understand the five-layer architecture your Personal OS runs on:
+
+```text
+┌─────────────────────────────────────────────┐
+│  INTERFACE LAYER                            │
+│  Terminal CLI · VS Code Extension · Desktop │
+├─────────────────────────────────────────────┤
+│  ORCHESTRATION LAYER                        │
+│  Agentic Loops · Plan Mode · Subagents      │
+├─────────────────────────────────────────────┤
+│  EXECUTION LAYER                            │
+│  File Tools · Bash · MCP Servers · APIs     │
+├─────────────────────────────────────────────┤
+│  MEMORY LAYER                               │
+│  CLAUDE.md · Auto-Memory · /Knowledge/      │
+├─────────────────────────────────────────────┤
+│  INTELLIGENCE LAYER                         │
+│  Claude 3.5/4.x Sonnet · Opus Reasoning     │
+└─────────────────────────────────────────────┘
+```
+
+**Interface Layer** — How you interact with the agent: terminal, VS Code, desktop app, or mobile via Remote Control.
+
+**Orchestration Layer** — The agent's reasoning logic, including Plan Mode (which plans before acting), subagents (isolated context windows for research), and workflow routing.
+
+**Execution Layer** — The actual toolset: reading/writing files, running shell commands, and connecting to external services via the Model Context Protocol (MCP).
+
+**Memory Layer** — The persistence system. This is the heart of the Personal OS and what makes it compound intelligence over time.
+
+**Intelligence Layer** — The underlying Claude model. For complex reasoning, use Opus 4.x. For speed on routine tasks, Sonnet is highly efficient.
+
+---
+
+![Personal OS five-layer architecture — interface, orchestration, execution, memory, and intelligence](https://images.unsplash.com/photo-1518770660439-4636190af475?w=800)
+
+## Step 1 — Environment Provisioning {#step-1-environment}
+
+A Personal OS requires specific local runtimes. Unlike a web chat, it executes code and manages files on your actual machine.
+
+### Hardware Requirements
+
+| Component | Minimum | Recommended |
+|---|---|---|
+| RAM | 4 GB | 8 GB+ |
+| Processor | x64 / ARM64 | Apple Silicon / Ryzen |
+| OS | macOS 13+ / Win 10+ | macOS 14+ / WSL2 |
+
+### Required Runtimes
+
+**Node.js v18.0.0+** — Powers the Claude Code CLI execution loop.
+
+```bash
+# Verify your version
+node --version  # Must return v18 or higher
+```
+
+**Python 3.10+** — Non-negotiable for MCP (Model Context Protocol) servers, which power cross-file task synchronization. On Windows, check **"Add Python to PATH"** during installation or MCP will silently fail.
+
+```bash
+python3 --version  # Must return 3.10 or higher
+```
+
+**Git** — Required for version control, branch management, and parallel worktree sessions.
+
+### Windows Users: Set Up WSL2 First
+
+Running Claude Code natively on Windows is possible, but running it inside **WSL2 (Ubuntu 22.04 LTS)** is strongly recommended. WSL2 provides a Unix-like shell interface with native sandboxing that prevents the agent from reaching system credentials and sensitive environment files.
+
+```powershell
+# Enable WSL2 in PowerShell (run as Administrator)
+wsl --install
+```
+
+After WSL2 is active, install Ubuntu 22.04 from the Microsoft Store and complete all remaining steps inside that Ubuntu terminal.
+
+---
+
+## Step 2 — Installation & Authentication {#step-2-installation}
+
+Anthropic provides a native installer that manages binary updates automatically. This is preferable to npm because it requires zero global package configuration.
+
+### Install the Binary
+
+**macOS, Linux, or WSL2:**
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+**Windows PowerShell (native):**
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+### Authenticate
+
+Type `claude` in your terminal. A browser window will open automatically for a one-time OAuth sign-in. You must have a **Claude Pro, Max, or Team account** — the free plan does not include Claude Code access.
+
+Once authenticated, credentials are stored locally in `~/.claude/` and will persist across sessions.
+
+### Verify Your Setup
+
+```bash
+claude --version   # Confirm binary is installed
+claude doctor      # Check environment path and shell config
+```
+
+`claude doctor` is your best diagnostic tool. If it reports any issues with your PATH or Node version, fix those before proceeding.
+
+---
+
+## Step 3 — Workspace Scaffolding {#step-3-scaffolding}
+
+A Personal OS requires a structured directory — the "body" where your agent lives and operates. Claude can only write to the folder where it was initiated and its subdirectories.
+
+### Initialize the Role-Based Setup Wizard
+
+Create a dedicated OS folder and run the interactive initialization:
+
+```bash
+mkdir MyPersonalOS
+cd MyPersonalOS
+CLAUDE_CODE_NEW_INIT=1 claude
+```
+
+This triggers a specialized subagent that will ask about your professional role (e.g., Product Manager, Founder, Operations Lead) and generate a tailored directory structure based on your actual workflows.
+
+### Standard Directory Blueprint (PARA Layout)
+
+```text
+MyPersonalOS/
+├── CLAUDE.md              # The Constitution — read every session
+├── GOALS.md               # Active priorities and long-term backlog
+├── MEMORY.md              # Agent's auto-written session learnings
+│
+├── /Projects/             # Active, bounded workstreams
+├── /Meetings/             # Transcript ingestion and action items
+├── /Knowledge/            # Persistent reference material
+│   ├── /People/           # Stakeholder profiles
+│   └── /Preferences/      # Tool settings and architectural decisions
+├── /Workflows/            # Repeatable procedural instruction sheets
+├── /Templates/            # Skeleton documents for consistent output
+├── /Tools/                # Custom scripts and automation helpers
+│
+└── /.claude/
+    ├── /skills/           # Custom slash commands (e.g., /daily-plan)
+    ├── /agents/           # Subagent configurations
+    ├── /docs/             # Progressive disclosure documents
+    └── settings.json      # Permission firewall configuration
+```
+
+**Design principle:** Claude writes only inside this directory. This boundary is your security perimeter and your operational context.
+
+---
+
+## Step 4 — Building Your CLAUDE.md Constitution {#step-4-constitution}
+
+`CLAUDE.md` is the most important file in your entire OS. Claude reads it at the start of every session. It defines the agent's persona, operational boundaries, and behavioral rules.
+
+Without it, Claude defaults to a software developer persona. Your Chief of Staff OS requires an explicit identity shift.
+
+<div class="my-8 rounded-xl border border-primary/20 bg-primary/5 p-6 relative overflow-hidden">
+<div class="absolute top-0 left-0 h-full w-1 bg-primary"></div>
+<div class="flex items-start gap-4">
+<div class="rounded-full bg-primary/20 p-2 text-primary shrink-0 flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        <path d="m9 12 2 2 4-4"></path>
+    </svg>
+</div>
+<div>
+<h4 class="text-lg font-bold text-slate-900 dark:text-white mb-2 uppercase font-display">The 200-Line Rule</h4>
+<p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+Keep your core <code>CLAUDE.md</code> <strong>under 200 lines (approximately 25KB)</strong>. Beyond this threshold, critical rules get buried in noise and the agent begins ignoring them. Move detailed procedures into specialized files in <code>.claude/docs/</code> and reference them via progressive disclosure.
+</p>
+</div>
+</div>
+</div>
+
+### Progressive Disclosure Pattern
+
+Instead of a dense manual, use `CLAUDE.md` as a routing map:
+
+```markdown
+If making a strategic decision → Read .claude/docs/decision-protocol.md
+If referencing past sessions   → Read .claude/docs/memory-system.md
+If executing a custom skill    → Read .claude/skills/[skill]/SKILL.md
+```
+
+This pattern ensures Claude loads specialized logic only when a task requires it, saving context tokens for actual work.
+
+### Complete Chief of Staff CLAUDE.md Template
+
+<div class="code-block-wrapper group">
+<div class="code-header">
+<span class="code-filename">~/.claude/CLAUDE.md</span>
+<button class="copy-button">
+<span class="icon-container inline-flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+    </svg>
+</span>
+<span>Copy</span>
+</button>
+</div>
+
+```markdown
+# Personal OS Constitution: Chief of Staff
+
+You are the personal Chief of Staff and executive administrative assistant
+to the Principal Operator. Your primary duty is to organize, optimize,
+and execute daily operations — NOT to write software.
+
+## Core Persona & Tone
+- Speak frankly. Treat the operator as an intelligent executive.
+- Prioritize absolute precision over generic politeness.
+- Focus on: task management, document compilation, context parsing,
+  proactive coordination.
+- Maintain a structured, plain-text markdown database as single
+  source of truth.
+
+## System Mapping (Contextual Anchors)
+Always reference these files before planning major actions:
+- @GOALS.md — Active priorities, role metrics, long-term backlog
+- /Meetings/ — Primary ingestion point for transcripts and action items
+- /Projects/ — Active workstreams and scoped research
+- /Knowledge/ — Persistent reference material and stakeholder profiles
+
+## Progressive Disclosure Rules
+Do NOT ingest all sub-protocols automatically. Use these routing rules:
+- Strategic decisions   → .claude/docs/decision-protocol.md
+- Memory/corrections    → .claude/docs/memory-system.md
+- Custom skill invoked  → .claude/skills/[skill]/SKILL.md
+
+## Operational Constraints
+- Done Definition: A task is only "done" when:
+  1. Action items are synced to @GOALS.md
+  2. Unique Task IDs are assigned (e.g., ^task-2026-001)
+  3. Session summary is logged in progress.md
+- Task IDs: Every task from meetings gets a unique ID for global tracking.
+- Drafting: For any Slack/Email communication, provide THREE variations:
+  Direct / Collaborative / Detailed
+
+## Session Hooks
+- On session start: Read GOALS.md and the latest Daily Review.
+- On /compact:      Preserve modified file list, active priorities,
+                    and key architectural decisions.
+- During idle:      Review MEMORY.md and move permanent facts to
+                    /Knowledge/ (Auto-Dreaming protocol).
+```
+
+</div>
+
+---
+
+## Step 5 — Connecting External Tools via MCP {#step-5-mcp}
+
+The **Model Context Protocol (MCP)** is the "universal port" of your OS — the mechanism that connects Claude to external services like Google Calendar, Slack, Notion, and GitHub.
+
+### Connecting MCP Servers
+
+```bash
+# Add individual tools
+claude mcp add notion
+claude mcp add google-workspace
+claude mcp add slack
+
+# Verify active connections
+/mcp
+```
+
+### The Metadata Token Tax
+
+Every MCP server you connect adds a "metadata tax" — its entire operational schema is loaded into the context window at session start:
+
+| Connected Servers | Token Overhead | Impact |
+|---|---|---|
+| 4 servers | ~7,000–14,000 tokens | Minimal — ideal |
+| 11 servers | ~33,000–66,000 tokens | Noticeable degradation |
+| 20 servers | ~60,000–120,000 tokens | Severe performance hit |
+| 32 servers | ~140,000–190,000 tokens | Consumes entire context |
+
+### Dynamic Preset Management
+
+The solution is **workflow-specific tool presets**. Configure your `settings.json` to load only the servers needed for the current task:
+
+<div class="code-block-wrapper group">
+<div class="code-header">
+<span class="code-filename">~/.claude/settings.json</span>
+<button class="copy-button">
+<span class="icon-container inline-flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+    </svg>
+</span>
+<span>Copy</span>
+</button>
+</div>
+
+```json
+{
+  "presets": {
+    "meeting-mode": {
+      "mcpServers": ["google-calendar", "slack", "contacts"]
+    },
+    "dev-mode": {
+      "mcpServers": ["github", "database", "terminal"]
+    }
+  }
+}
+```
+
+</div>
+
+Switch presets with `/mcp` to audit and adjust your active servers.
+
+---
+
+![Terminal showing MCP server configuration and connected tools](https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800)
+
+## Step 6 — Creating Custom Skills & Automation {#step-6-skills}
+
+Skills are packaged instruction sets stored in `.claude/skills/`. They give your OS deterministic, repeatable workflows invoked via slash commands like `/daily-plan` or `/process-meeting`.
+
+### Skill Architecture
+
+Every skill lives in its own directory with a `SKILL.md` file:
+
+<div class="code-block-wrapper group">
+<div class="code-header">
+<span class="code-filename">.claude/skills/</span>
+<button class="copy-button">
+<span class="icon-container inline-flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+    </svg>
+</span>
+<span>Copy</span>
+</button>
+</div>
+
+```text
+.claude/skills/
+├── daily-plan/
+│   └── SKILL.md
+├── process-meeting/
+│   └── SKILL.md
+└── auto-dream/
+    └── SKILL.md
+```
+
+</div>
+
+### YAML Frontmatter Configuration
+
+```markdown
+---
+name: daily-plan
+description: Orchestrates an intelligence sweep to generate a daily plan.
+disable-model-invocation: true   # Requires manual /daily-plan trigger
+allowed-tools: ["mcp-calendar", "mcp-slack"]
+---
+```
+
+**Critical settings:**
+- `disable-model-invocation: true` — Prevents autonomous execution for skills with side effects (deployments, invoices, emails)
+- `allowed-tools` — Grants per-use approval only for the tools that skill actually needs
+
+### The Daily Plan Skill Template
+
+```markdown
+---
+name: daily-plan
+description: Intelligence sweep generating a structured daily operational plan.
+disable-model-invocation: true
+---
+
+### Daily Planning Protocol
+When invoked via /daily-plan:
+
+#### 1. Intelligence Ingestion
+- Read @GOALS.md and @Week_Priorities.md for strategic context.
+- Pull today's calendar events via connected MCP server.
+- Scan /Meetings/ for transcripts from last 48 hours.
+
+#### 2. Context Synthesis
+- Identify Account Attention items needing follow-up.
+- Cross-reference Slack mentions with active project accounts.
+
+#### 3. Output Generation
+Create /Daily_Plans/YYYY-MM-DD-Plan.md containing:
+- The Big 3: Three non-negotiable priorities (reduce to 2 on meeting-heavy days).
+- Account Intel: Who to contact and why.
+- Comms Drafts: Three variations for critical messages (Direct/Collaborative/Detailed).
+
+#### 4. System Sync
+- Log session start in progress.md.
+```
+
+### Subagents for Isolated Tasks
+
+For research-intensive tasks that would contaminate your main session context, configure subagents in `.claude/agents/`:
+
+```markdown
+---
+name: security-reviewer
+description: Reviews code changes for vulnerabilities in an isolated context.
+context: fork
+---
+You are a security specialist. Review the provided diff exclusively for:
+- Data exfiltration risks
+- Injection vulnerabilities
+- Credential exposure in environment variables
+```
+
+---
+
+## Step 7 — Context Hygiene & Memory Management {#step-7-memory}
+
+Context management is the most critical operational skill for long-term Personal OS performance. Claude's context window (200,000 tokens) degrades as it fills — a phenomenon called "context drift" where the agent forgets earlier instructions or makes inconsistent decisions.
+
+### The Core Rules
+
+<div class="my-8 rounded-xl border border-primary/20 bg-primary/5 p-6 relative overflow-hidden">
+<div class="absolute top-0 left-0 h-full w-1 bg-primary"></div>
+<div class="flex items-start gap-4">
+<div class="rounded-full bg-primary/20 p-2 text-primary shrink-0 flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        <path d="m9 12 2 2 4-4"></path>
+    </svg>
+</div>
+<div>
+<h4 class="text-lg font-bold text-slate-900 dark:text-white mb-2 uppercase font-display">The 50% Rule</h4>
+<p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+Start a fresh session when context usage reaches 40–50%. Staying within this threshold keeps the agent inside its "coherence zone."
+</p>
+</div>
+</div>
+</div>
+
+**Task Isolation.** Run `/clear` between unrelated tasks. Mixing a bug fix session with a weekly report creates context pollution that makes both tasks worse.
+
+**The Twice-Failed Rule.** If you've corrected Claude on the same issue more than twice, the session is polluted. Run `/clear` and restart with a sharper prompt that incorporates what you learned.
+
+### Context Management Commands
+
+```bash
+/clear              # Full reset — start completely fresh
+/compact            # Compress history, preserve key decisions
+/compact Focus on active API changes   # Targeted compression
+/btw What does X do?   # Quick question — never enters context
+Shift+Tab (×2)      # Toggle Plan Mode (reason without acting)
+Esc + Esc           # Open Rewind menu — restore previous state
+```
+
+### The Auto-Memory System
+
+Claude Code's auto-memory (`MEMORY.md`) captures preferences, debugging insights, and corrections between sessions automatically. It is capped at **200 lines (~25KB)**. Once full, new learnings are silently dropped.
+
+Monitor and audit it regularly:
+
+```bash
+/memory    # Browse all loaded instruction files and auto-memory
+```
+
+---
+
+## Step 8 — Security Hardening {#step-8-security}
+
+Giving an AI agent access to your terminal is a significant security responsibility. Without proper guardrails, the system is vulnerable to prompt injection attacks that could attempt to leak credentials or perform unauthorized file operations.
+
+### The Permission Firewall
+
+Configure `~/.claude/settings.json` with a layered permission hierarchy. The engine evaluates rules in strict order: **deny → ask → allow**.
+
+<div class="code-block-wrapper group">
+<div class="code-header">
+<span class="code-filename">~/.claude/settings.json</span>
+<button class="copy-button">
+<span class="icon-container inline-flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+    </svg>
+</span>
+<span>Copy</span>
+</button>
+</div>
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit *)",
+      "Bash(npm run test *)",
+      "Bash(npm run lint *)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "WebFetch(*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(curl * | bash)"
+    ]
+  }
+}
+```
+
+</div>
+
+**Rule:** If a deny entry exists at any level, it cannot be overridden by allow. Set deny rules first for destructive operations.
+
+### OS-Level Sandboxing
+
+For the highest level of protection, enable sandboxing in project settings:
+
+<div class="code-block-wrapper group">
+<div class="code-header">
+<span class="code-filename">~/.claude/settings.json</span>
+<button class="copy-button">
+<span class="icon-container inline-flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+    </svg>
+</span>
+<span>Copy</span>
+</button>
+</div>
+
+```json
+{
+  "sandbox": {
+    "enabled": true,
+    "allowedDirectories": ["./MyPersonalOS"],
+    "allowedDomains": ["api.github.com", "api.notion.com"]
+  }
+}
+```
+
+</div>
+
+This restricts the agent to your workspace directory and whitelisted external APIs — even if a prompt injection attempts to reach beyond them.
+
+### Restricted Egress Mode
+
+When working with highly sensitive files (`.env`, financial records, private career data), run in restricted mode:
+
+```bash
+CLAUDE_CODE_RESTRICTED_EGRESS=1 claude
+```
+
+This disables background updates and error telemetry, ensuring your session is a complete "black box."
+
+<div class="my-8 rounded-xl border border-red-500/20 bg-red-500/5 p-6 relative overflow-hidden">
+<div class="absolute top-0 left-0 h-full w-1 bg-red-500"></div>
+<div class="flex items-start gap-4">
+<div class="rounded-full bg-red-500/20 p-2 text-red-500 shrink-0 flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+</div>
+<div>
+<h4 class="text-lg font-bold text-slate-900 dark:text-white mb-2 uppercase font-display">Danger Zone: Never Use This Without a Sandbox</h4>
+<p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+The <code>--dangerously-skip-permissions</code> flag bypasses all confirmation prompts. Only use it inside isolated Docker containers with Git tracking enabled. On your primary machine, it is an unnecessary risk.
+</p>
+</div>
+</div>
+</div>
+
+---
+
+## Advanced: Auto-Dreaming & Knowledge Compounding {#auto-dreaming}
+
+"Auto-Dreaming" is the process of consolidating transient session memories into permanent structured knowledge before `MEMORY.md` hits its 200-line ceiling.
+
+### Why It Matters
+
+Without Auto-Dreaming, your OS hits a performance ceiling. New session learnings get dropped, preferences stop accumulating, and the agent "forgets" things it learned months ago. With it, your OS continues compounding intelligence indefinitely.
+
+### Manual Trigger
+
+During any idle session, instruct Claude to perform consolidation:
+
+```markdown
+Review all records in MEMORY.md. Identify stable facts, stakeholder
+preferences, and architectural decisions. Move permanent insights to
+/Knowledge/People/ or /Knowledge/Preferences/. Then prune those entries
+from MEMORY.md to restore its learning capacity.
+```
+
+### Automated Auto-Dream Skill
+
+Create `.claude/skills/auto-dream/SKILL.md`:
+
+```markdown
+---
+name: auto-dream
+description: Consolidates transient memory into permanent knowledge files.
+disable-model-invocation: true
+---
+
+### Memory Consolidation Protocol
+When invoked via /auto-dream:
+
+1. Read @MEMORY.md and all topic files in ~/.claude/projects/[project]/memory/
+2. Identify stable facts, preferences, and architectural decisions.
+3. Reconcile contradictory or redundant entries.
+4. Move permanent insights to structured files:
+   - Stakeholder info → /Knowledge/People/[Name].md
+   - Tool preferences → /Knowledge/Preferences/[tool].md
+   - Architectural patterns → /Knowledge/Architecture/[topic].md
+5. Verify move is complete, then prune matching entries from MEMORY.md.
+6. Log: "Auto-Dream complete. Pruned [N] entries. Moved to [paths]."
+```
+
+### Schedule It as a Desktop Task
+
+```bash
+/schedule
+# Configure: Run /auto-dream every Friday at 5:00 PM
+```
+
+Desktop scheduled tasks run on your local machine with full filesystem access — unlike cloud-based routines which don't have access to your local `/Knowledge/` directory.
+
+### Update CLAUDE.md for Progressive Disclosure
+
+After Auto-Dreaming moves content to `/Knowledge/`, ensure Claude loads it only when needed:
+
+```markdown
+## Progressive Disclosure: Knowledge Files
+- Stakeholder context    → Read /Knowledge/People/[Name].md only when that person is referenced.
+- Architectural patterns → Read /Knowledge/Architecture/ only during design decisions.
+- Tool preferences       → Read /Knowledge/Preferences/ only for that specific tool.
+```
+
+---
+
+## Advanced: Scaling with Parallel Sessions {#scaling}
+
+Once your OS is operational, you can run multiple Claude sessions simultaneously — one writing code, one doing research, one auditing security — without file collisions.
+
+### Git Worktrees for Parallel Execution
+
+```bash
+# Create isolated working directories for parallel sessions
+git worktree add ../os-research-branch research
+git worktree add ../os-dev-branch development
+git worktree add ../os-audit-branch security-audit
+
+# Point separate Claude sessions at each worktree
+cd ../os-research-branch && claude
+```
+
+Each Claude session pointed at a separate worktree is physically isolated. Two agents cannot modify the same file in incompatible ways.
+
+### Practical Parallel Workflow
+
+- **Session A (main):** Active implementation and high-level orchestration
+- **Session B (research branch):** Deep investigation or market research in isolated context
+- **Session C (audit branch):** Security review of changes before merge
+
+This replicates the capacity of a small team from a single developer's machine.
+
+---
+
+## Real-World Use Cases {#use-cases}
+
+### The 5-Minute Daily Plan
+
+Every morning, one command (`/daily-plan`) executes a full intelligence sweep: pulls your calendar, reads your goals file, scans recent meeting transcripts, cross-references any Slack mentions, and produces a single Markdown document containing your top three priorities, who needs follow-up, and drafted messages for your team — before you've had your coffee.
+
+### Meeting Intelligence
+
+Tools like Granola record and transcribe meetings on Mac/mobile. A Node sync script pulls transcripts into `/Meetings/`. The `/process-meeting` skill reads the transcript, identifies action items, assigns each one a unique task ID (`^task-2026-001`), and syncs them to your global `Tasks.md`. By the time your next meeting starts, the previous one is fully processed with zero manual effort.
+
+### Relationship Management & Career Tracking
+
+Before any call, you ask Claude for a briefing on the person. It pulls months of accumulated context from their page in `/Knowledge/People/`: what you discussed last time, their open commitments, what they care about professionally. Every interaction is informed by your entire history with them.
+
+For career tracking, every completed project and piece of positive feedback gets captured as "Career Evidence." The `/career-coach` skill runs a skills gap analysis against your career ladder and tells you exactly where to invest effort to reach the next level.
+
+### Malleable Software: Building Custom Tools
+
+The highest expression of Personal OS fluency is the "describe and build" workflow:
+
+> "I have too many PRDs in flight. Build me a local web UI where I can see every PRD in my /Projects/ folder as a card on a Kanban board with status columns and an AI-generated priority ranking."
+
+Within hours, you have a custom React interface that reads your Markdown files, displays them as cards, and allows drag-and-drop status updates that sync back to the source files. No SaaS subscription. No vendor lock-in.
+
+---
+
+## The 90-Day Fluency Roadmap {#roadmap}
+
+Competency develops in clear stages. Trying to automate everything on Day 1 causes context overload and undermines the system before it's established.
+
+### Weeks 1–4: Orientation
+
+Focus on single-task sessions. Learn to invoke Plan Mode (`Shift+Tab`) before every major action. Use `/clear` religiously between unrelated tasks. Evaluate Claude's output critically — you are training yourself to recognize what good agentic behavior looks like.
+
+**Goal:** Understand the Reasoning-Action-Observation loop and develop good session hygiene habits.
+
+### Months 1–3: Construction
+
+Introduce multi-file workflows and your first MCP connections. Build your first two or three custom skills (`/daily-plan`, `/process-meeting`). Implement Auto-Dreaming manually. Begin populating `/Knowledge/People/` after significant calls.
+
+**Goal:** A functional Chief of Staff workflow for meetings, tasks, and daily planning.
+
+### Months 3–6: Professional Practice
+
+Integrate your full tech stack via MCP. Build malleable software tools for your specific pain points. Deploy a security-hardened permission firewall. Run your first parallel sessions with Git Worktrees.
+
+**Goal:** Your OS is now a specialist, not a generalist — deeply tuned to your role and workflows.
+
+### Month 6+: Advanced Operation
+
+You are no longer a user; you are a **Systems Orchestrator**. You define new agents, extend skill libraries, and build context-aware tools that anticipate your needs. You build for the model six months ahead, knowing your infrastructure will absorb new Claude capabilities automatically.
+
+---
+
+## Quick Reference: Commands & Templates {#quick-reference}
+
+### Essential Commands
+
+| Command | Purpose |
+|---|---|
+| `claude doctor` | Diagnose environment and authentication |
+| `claude mcp add [server]` | Connect external tool via MCP |
+| `/clear` | Full context reset between tasks |
+| `/compact [focus]` | Compress history, preserve key state |
+| `/memory` | Audit all loaded instruction files |
+| `/mcp` | Review active MCP servers and token load |
+| `/permissions` | Modify permission firewall |
+| `Shift+Tab (×2)` | Toggle Plan Mode (reason without acting) |
+| `Esc + Esc` | Open Rewind — restore previous state |
+| `/btw [question]` | Quick query, never enters context window |
+
+### Context Loading Prompt (New Session)
+
+```markdown
+Read CLAUDE.md, GOALS.md, and progress.md. Provide a 3-sentence summary
+of current status and the immediate next priority.
+```
+
+### Starting a New Feature
+
+```markdown
+I want to implement [Feature Name]. Enter Plan Mode, read the relevant
+files in [Directory], and propose a multi-file implementation strategy.
+Do not write any code until I approve the plan.
+```
+
+### Adversarial Review Prompt
+
+```markdown
+I have finished [Task]. Act as an adversarial reviewer. Scan the diff
+for security vulnerabilities, edge case omissions, and deviations from
+our architecture in CLAUDE.md. Do not just approve it — find what's wrong.
+```
+
+### Definition of Done Checklist
+
+Before closing any session:
+
+- [ ] Does output match the approved implementation plan?
+- [ ] Has Claude run a test, build, or screenshot to verify it works?
+- [ ] Have you run `/compact` or `/clear` to prepare for the next task?
+- [ ] Has `progress.md` been updated with new decisions or learnings?
+
+---
+
+## The Structural Advantage
+
+Building a Personal OS with Claude Code is not a productivity trick. It is a compounding investment.
+
+Every session makes your `/Knowledge/` directory richer. Every skill you build reduces a future hour of manual work to a single slash command. Every memory that gets consolidated through Auto-Dreaming makes the agent more precisely tuned to your judgment.
+
+The gap between professionals who use AI for chat and those who build operating systems is widening right now. The practitioners who establish their infrastructure in early 2026 will possess capabilities that look indistinguishable from superpowers to their peers by year's end.
+
+**Build for the model six months ahead.** The MCP connections, constitutional layers, and skill blueprints you establish today are ready the moment Opus 4.7 or Claude 5 arrives — automatically more powerful without a single configuration change.
+
+You are no longer just chatting with an AI. You are running an operating system that learns, executes, and scales alongside you.
+
+---
+
+## Glossary of Agentic Terms
+
+**Agentic Computing** — A system that acts toward a goal by reading files, running commands, and self-correcting through failure, rather than just generating text.
+
+**Auto-Dreaming** — The process of consolidating transient session memories from `MEMORY.md` into permanent structured files in `/Knowledge/`, preventing cognitive degradation from hitting the 200-line memory ceiling.
+
+**CLAUDE.md (Constitution)** — The primary instruction file containing the agent's persona, operational rules, and progressive disclosure routing map. Read at the start of every session.
+
+**Context Window** — The agent's "short-term memory" (typically 200k tokens) holding the current conversation, file contents, and tool outputs.
+
+**MCP (Model Context Protocol)** — An open standard for connecting AI agents to external data sources like Google Workspace, Slack, Notion, or local databases.
+
+**Plan Mode** — An operational mode where Claude reasons through a task and proposes a strategy without modifying any files. Invoked with `Shift+Tab (×2)`.
+
+**Progressive Disclosure** — A design pattern where `CLAUDE.md` serves as a routing map, instructing Claude to load specialized documentation only when a specific task requires it.
+
+**Subagent** — A Claude instance running in an isolated context window, delegated a specific research or analysis task to prevent context pollution in the main session.
+
+**Threshold of Coherence** — The inflection point reached in late 2025 where agentic AI became reliable enough for extended unattended execution rather than just autocomplete.
+
+---
+
+*This guide reflects Claude Code capabilities as of mid-2026. As models evolve, the infrastructure you build today will absorb new intelligence automatically. The system is designed to compound — so start now.*
