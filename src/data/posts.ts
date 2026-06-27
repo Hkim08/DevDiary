@@ -84,11 +84,10 @@ export const posts: Post[] = [
     coverType: 'code',
   },
   {
-    slug: 'claude-code-personal-os-guide',
-    title: 'Claude Code Personal OS: 10-Minute Quick Start Setup',
+    slug: 'claude-code-personal-os',
+    title: 'I Stopped Prompting Claude and Started Operating It',
     description:
-      'Personal Claude OS quick start. Turn ~/.claude/ into a portable productivity system in 10 minutes with CLAUDE.md, slash commands, and MCP connections.',
-    date: 'Jun 2026',
+      'Personal Claude OS architecture — identity layer, memory management, hooks, skills, agents, and the self-improvement loop. How I turned ~/.claude/ into a portable operating environment.',
     readTime: '6 min read',
     category: 'Tutorials',
     categoryStyle: 'accent',
