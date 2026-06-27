@@ -1,20 +1,22 @@
 ---
 title: 'MCP Server Configuration: The Production Patterns I Actually Run'
 description: 'Production MCP server configuration for Claude Code. 7 servers, one .mcp.json, context-aware chaining, and the decision tree for adding or removing each one.'
-pubDate: 2026-06-26
+pubDate: 2026-06-27
 author: 'Rachid Houmayni'
 image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200'
 category: 'Tutorials'
 readingTime: '10 min read'
 tags: ['mcp', 'claude-code', 'configuration', 'production', 'tool-chaining', 'devops']
 featured: false
+coverType: 'code'
+draft: false
 ---
 
 Most MCP server configuration guides ship toy examples. Here is the production `.mcp.json` I actually run — Context7, Playwright, GitHub, database, and three more — with context-cost analysis, wiring decisions, and the exact configs.
 
 Anthropic archived their reference MCP servers (GitHub, PostgreSQL, Slack) in May 2025. The third-party ecosystem has filled the gap — Playwright MCP has more GitHub stars than any Anthropic server ever had, GitHub shipped their own Go-based implementation, and Stripe, Supabase, and Neon all have official servers with OAuth. But the wiring is still fragmented. Most guides show one server in isolation. Real projects run 5–10 servers with overlapping tool schemas and competing context budgets.
 
-I run ContentOS v3 — a 5-agent content orchestration system — on Claude Code. It uses 7 MCP servers across research, publishing, monitoring, and deployment workflows. Here is the exact wiring, why each server earns its context cost, and the decision tree I use before adding any new one.
+I run ContentOS v3 — a 5-agent content orchestration system — on Claude Code. It uses 7 MCP servers across research, publishing, monitoring, and deployment workflows. Here is the exact wiring, why each server earns its context cost, and the decision tree I use before adding any new one. For the full architecture these servers support, see the [Personal Claude OS architecture guide](/blog/claude-code-personal-os).
 
 ## Why One Config File Fails at Scale
 
@@ -154,3 +156,7 @@ And Claude loads only the servers that session needs. This dropped my average co
 You can copy the configs above into your own `.mcp.json` today. The context-cost table gives you the numbers to decide what belongs in your daily driver versus your full suite.
 
 What I would add next: a server for agent-to-agent communication once the protocol stabilises across clients. That is the piece still missing from every production wiring I have seen.
+
+---
+
+I packaged these configs — 3 profiles (default/full/deploy), the context-cost table, and the decision tree — into a portable wiring pack. Six files, zero dependencies, works with any Claude Code project. [Get the MCP Server Wiring Pack →](https://ubix08.gumroad.com/l/mcp-server-wiring-pack)

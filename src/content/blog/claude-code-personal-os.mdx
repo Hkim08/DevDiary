@@ -1,0 +1,975 @@
+---
+title: 'I Stopped Prompting Claude and Started Operating It'
+description: 'The full architecture behind a Personal Claude OS — identity layer, memory, MCP, hooks, skills, agents, and the self-improvement loop. Production system, not theory.'
+pubDate: 2026-06-27
+author: 'Rachid Houmayni'
+category: 'Claude Code'
+readingTime: '25 min read'
+tags: ['claude-code', 'mcp', 'memory', 'hooks', 'agents', 'skills', 'personal-os', 'automation']
+featured: true
+coverType: 'doc'
+draft: false
+---
+
+## The Architecture Behind a System That Gets Smarter Every Week
+
+The session ran for forty-five minutes. I was watching Claude refactor a database migration layer — good progress, confident output, clean diffs. Twenty minutes in, it had silently abandoned a constraint I'd mentioned in the opening message. The constraint was still in the context window. Claude had just deprioritized it as more conversation accumulated. I caught it at minute forty-five because I ran the integration tests. If I hadn't, that regression would have shipped.
+
+I wasn't using the model wrong. I was using it without architecture. No persistent memory. No verification gates. No behavioral rules that outlived the session. I was operating a stateful autonomous agent like a search engine — type, wait, evaluate, repeat. The model was doing what models do. The gap was mine.
+
+That session ended my prompting era.
+
+Most people open Claude Code and treat it like a smarter chat window. The naive approach: ask Claude to do the thing, paste more context when it misses, repeat. Wonder why results vary so much between Monday and Friday.
+
+The actual system: Claude Code is a stateful agentic runtime. It runs a loop — pick a tool, execute it, observe the result, decide the next step — until the task is done or it asks you. The tools are real: file reads, bash commands, web search, MCP calls. The session is a context window with a hard ceiling. Every token in that window is either working for you or wasting budget.
+
+The mental shift that matters: you are not prompting Claude. You are configuring an operating environment. The CLAUDE.md is not a polite instruction. The hooks are not optional reminders. The `.mcp.json` is not a feature list. Together, they define the rules of the machine you are running.
+
+The system that achieves consistency across sessions has four working parts:
+
+```
+┌─────────────────────────────────────────────────────┐
+│              Claude Code Operating System            │
+├─────────────┬───────────┬──────────┬────────────────┤
+│  MEMORY     │  MCP      │  HOOKS   │  BENCHMARK     │
+│  CLAUDE.md  │  Servers  │  Shell   │  Measurement   │
+│  < 500t     │  Scoped   │  Gates   │  Repeatable    │
+└─────────────┴───────────┴──────────┴────────────────┘
+```
+
+Everything else — rule modules, skills, agents, personas — sits on top of these four layers. If those four aren't stable, nothing above them is.
+
+---
+
+**What's in this post:**
+1. [The Three Structural Problems Nobody Fixes](#the-three-structural-problems-nobody-fixes)
+2. [What a Personal Claude OS Actually Is](#what-a-personal-claude-os-actually-is)
+3. [Layer 1: The Identity File](#layer-1-the-identity-file)
+4. [Layer 2: Install and First Session](#layer-2-install-and-first-session)
+5. [Layer 3: The Project Memory File](#layer-3-the-project-memory-file)
+6. [Layer 4: Rule Modules](#layer-4-rule-modules)
+7. [Layer 5: MCP Servers](#layer-5-mcp-servers)
+8. [Layer 6: Hooks](#layer-6-hooks)
+9. [Layer 7: Skills](#layer-7-skills)
+10. [Layer 8: Agents and Personas](#layer-8-agents-and-personas)
+11. [The Self-Improvement Loop](#the-self-improvement-loop)
+12. [Team Workflows](#team-workflows)
+13. [What I Got Wrong](#what-i-got-wrong-and-how-to-skip-it)
+14. [Getting Started](#getting-started-the-right-sequence)
+15. [The Operator Mindset](#the-operator-mindset)
+
+---
+
+## The Three Structural Problems Nobody Fixes
+
+Before the solution, the diagnosis.
+
+The complaint I hear most: *Claude keeps forgetting things.* That's a misframing. The model isn't forgetting. There is no persistence layer between sessions unless you build one. You are the only memory the system has, which means you are the bottleneck, and the bottleneck works best asleep.
+
+The second problem is **instruction decay**. A frontier model can hold roughly 150 to 200 distinct behavioral instructions in reliable attention at once. Claude Code's internal system prompt consumes around 50 of those slots before your first message. When you paste a 300-line CLAUDE.md, you're not giving the model more guidance — you're overwriting your own earlier rules with noise as the context window fills. I tested this explicitly:
+
+```text
+Message 5:  "What is the canary?"       → "purple hexagon" (correct)
+Message 40: "What is the canary?"       → "A tracking value used to monitor system drift."
+Message 5:  "What file defined it?"     → "Bottom of CLAUDE.md, line 274."
+Message 40: "What file defined it?"     → "Probably in the project's memory section."
+```
+
+The file was still there. The attention wasn't.
+
+The third problem is **the trust-then-verify gap**. You give an agent a bounded task and step away for twenty minutes. You come back to a diff that looks right but isn't — tests passing because three were deleted, a migration that applied against the wrong schema, a refactor that fixed the function you pointed at and silently broke the one that called it. These aren't hallucination failures. They're architecture failures. There was no gate between "Claude thinks it's done" and "the task is actually done."
+
+These are solvable problems. Not with better prompts — with a real operating architecture.
+
+---
+
+## What a Personal Claude OS Actually Is
+
+Not software. Not an npm package. Not a cloud service.
+
+A Personal Claude OS is a directory — `~/.claude/` — containing a hierarchy of plain Markdown files and shell scripts that Claude Code reads at session start and during execution. The "operating system" is a metaphor, but it maps cleanly: the identity layer is the kernel, rule modules are device drivers, skills and agents are user-space processes, hooks are interrupt handlers. Every part has a defined scope, a defined moment of execution, and a defined way of failing.
+
+Here is the full structure I run today:
+
+```text
+~/.claude/
+├── CLAUDE.md                    ← Global identity: who I am, how I work, what never happens
+├── claude.json                  ← MCP server registry + hook registration
+├── rules/                       ← Behavioral modules loaded by reference
+│   ├── security.md
+│   ├── git.md
+│   ├── testing.md
+│   ├── code-style.md
+│   └── database.md
+├── skills/                      ← Slash-command workflows
+│   ├── review-pr.md
+│   ├── debug.md
+│   ├── simplify.md
+│   └── write-spec.md
+├── agents/                      ← Named sub-agents with specific tool access
+│   ├── chief-of-staff.md
+│   ├── researcher.md
+│   ├── implementer.md
+│   └── reviewer.md
+└── hooks/
+    ├── pre-tool-use.sh
+    ├── post-tool-use.sh
+    └── stop-hook.sh
+```
+
+Each project gets its own `./CLAUDE.md` committed to the repo and a `./CLAUDE.local.md` that's gitignored for machine-specific overrides. The whole structure is portable plain text. Copy it to a new machine and you're operational in two minutes. Point a different agent runtime at the folder and it reads the same context. The OS travels with you.
+
+---
+
+## Layer 1: The Identity File (`~/.claude/CLAUDE.md`)
+
+The global identity layer loads in every session, before any project file, before any tool. It defines two things: who I am as a developer, and what Claude must never do in any context.
+
+Mine is 94 lines. I treat it as a hard limit. When a new rule wants in, something has to leave. The constraint forces precision. Every line that stays has survived a cost-benefit analysis against attention budget.
+
+```markdown
+# Identity
+I'm Rachid — solo developer, mostly TypeScript/Node/Postgres stack.
+I work on production systems, not side projects. Mistakes have consequences.
+Respond directly. No preamble. No "Great question!" No hedging.
+When I ask for a plan, give me a plan. When I ask for code, give me code.
+If you're uncertain, say you're uncertain and give me the best option with caveats.
+
+# Non-Negotiables
+These apply in every session, every project, no exceptions:
+- NEVER send a message (Slack, email, Discord) without showing me a draft first
+- NEVER delete any file without explicit confirmation
+- NEVER push to main or master
+- NEVER run DROP, TRUNCATE, or DELETE without a WHERE clause without confirmation
+- NEVER edit .env, .env.local, or any secrets file
+- NEVER assume a migration is safe — always show the rollback first
+- Prefer reversible actions. If both paths solve the problem, take the reversible one.
+
+# Technical Defaults
+These are overridden per-project. They're fallbacks when no project CLAUDE.md exists.
+- Runtime: Node 22, TypeScript 5.4 strict mode
+- DB: Postgres 16 with Drizzle ORM
+- Package manager: pnpm
+- Formatter: Prettier, runs on save
+- Test runner: Vitest
+- Lint: ESLint with @antfu/eslint-config
+
+# Communication Protocol
+- Lead with the answer. Put explanation below.
+- Use inline code for anything technical: file paths, commands, function names.
+- If a task will take more than 5 tool calls, give me the plan first and wait.
+- If you disagree with my approach, say so once clearly, then do it my way if I confirm.
+
+# Rules Reference
+The following rule modules are available. Load them when relevant:
+- @rules/security.md — for any file write, network call, or credential access
+- @rules/git.md — for any git operation
+- @rules/testing.md — for any test creation or modification
+- @rules/database.md — for any schema change or query pattern
+```
+
+The `@rules/` import pattern is the piece most people miss. Instead of dumping all behavioral rules into the global file, you reference modular files and let Claude load them contextually. A session reading code never loads `@rules/database.md`. A session writing a migration loads it immediately. The attention budget stays clean.
+
+**Global identity file:** communication style, absolute non-negotiables, technical defaults, and the index of rule modules.
+
+**Rule modules:** domain-specific behavioral contracts that apply in specific contexts. These can be long without polluting general session context.
+
+**What doesn't belong in memory files:** task-specific context. Current sprint goals, ticket numbers, which PR is in review — that goes in the *project* CLAUDE.md, not the global one. And it changes every week.
+
+---
+
+## Layer 2: Install and First Session (`claude doctor`)
+
+```bash
+curl -fsSL https://claude.ai/install.sh | sh
+```
+
+Use the native binary installer. The npm path (`npm install -g @anthropic-ai/claude-code`) is deprecated — it installs an older version that doesn't support the current hook schema, MCP scope flags, or permission model.
+
+```bash
+# Verify the install
+claude doctor
+
+# First session
+cd ~/projects/my-app
+claude
+
+# Sanity check
+/doctor
+```
+
+The `/doctor` output tells you which config files are loaded, which MCP servers are connected, and whether the memory file is in scope. Read it before you trust anything else.
+
+**What to verify:**
+- Memory file is loaded (`CLAUDE.md found`)
+- No MCP auth errors
+- Model is what you expect (`/model` to confirm)
+- Token budget visible (`/cost` after one round-trip)
+
+Windows: WSL2 is required. Native Windows has known issues with stdio-based MCP servers and hook execution.
+
+---
+
+## Layer 3: The Project Memory File (`./CLAUDE.md`)
+
+The global identity file handles *how I work*. The project CLAUDE.md handles *how this specific codebase works*.
+
+Here is the template I commit to every new project:
+
+```markdown
+# Project: [name]
+[One sentence: what this is, who uses it, what happens if it breaks.]
+
+# Stack
+- Runtime: Node 22 / TypeScript 5.4
+- Framework: Fastify 4.x
+- Database: Postgres 16, Drizzle ORM, Redis 7 for queues
+- Hosting: Railway (staging), Hetzner bare metal (production)
+- CI: GitHub Actions — push to main triggers deploy
+
+# Architecture
+[Two or three sentences on the structural shape of the codebase.
+Where the business logic lives. What's owned by this service vs external.]
+
+# Directory Map
+src/
+├── api/          ← Route handlers only. No business logic.
+├── services/     ← Business logic. One file per domain.
+├── db/           ← Drizzle schema, migrations, query helpers
+├── jobs/         ← BullMQ workers. Each job in its own file.
+├── lib/          ← Shared utilities. No side effects.
+└── __tests__/    ← Mirrors src/ structure.
+
+# Non-Negotiables (Project-Specific)
+- No logic in route handlers. Services only.
+- Every DB write wraps in a transaction unless explicitly argued otherwise.
+- No raw SQL strings. Use the query builder or a tagged template with the db client.
+- src/lib/ has zero imports from src/services/. No circular deps.
+
+# What Not To Touch
+- src/db/migrations/ — never edit existing migrations, only add new ones
+- .env.production — off limits, always
+- src/lib/config.ts — don't add new config keys without asking
+
+# Current State
+Working on: [describe current task / sprint goal]
+Known issues: [list anything Claude should know is broken or fragile]
+Last major change: [most recent significant structural change]
+```
+
+The "Current State" section is the only one I regularly update. Everything else describes the codebase's permanent architecture. When a session starts, Claude reads this and knows the topology without me explaining it.
+
+### What CLAUDE.md does — and does not do
+
+It injects persistent context at the start of every session: stack, conventions, non-negotiables. It does not persist state across sub-context launches. When Claude spawns a sub-agent for an isolated task, that sub-agent starts with a clean context — it won't automatically see the project CLAUDE.md unless the agent definition explicitly references it.
+
+### The `CLAUDE.local.md` pattern
+
+Committed CLAUDE.md is shared. `CLAUDE.local.md` is gitignored and personal:
+
+```markdown
+# Local Overrides (not committed)
+- My local DB is at postgres://localhost:5432/myapp_dev
+- I run the queue worker in a separate terminal — don't start it automatically
+- I prefer pnpm, not npm, even though the repo uses npm scripts in package.json
+```
+
+Small file, real value. Prevents the thing where you keep correcting the same machine-specific behavior because you didn't document it.
+
+---
+
+## Layer 4: Rule Modules (`@rules/`)
+
+Behavioral rules for specific domains are context-specific. You don't need Claude thinking about the SQL injection surface when you're drafting a README. But you absolutely need it when Claude is generating a query that takes user input. Loading everything by default is wasteful. Loading nothing means you re-state rules per-session.
+
+Rule modules are a middle path: documented contracts that Claude loads when the context makes them relevant.
+
+### `@rules/security.md`
+
+```markdown
+# Security Rules
+
+## File Access
+- Never read files outside the current project directory without asking
+- Never read system files: /etc/, /var/, ~/.ssh/, ~/.aws/, ~/Library/
+- Treat any file with these patterns as a secrets file: API_KEY, SECRET, TOKEN,
+  PASSWORD, PRIVATE_KEY, ACCESS_KEY — and do not read, log, or transmit
+  its contents
+
+## Credential Handling
+- Environment variables are the only acceptable way to inject secrets into code
+- Never hardcode a credential, even in a test or comment
+- If I ask you to use a credential for testing, refuse and explain why env vars work
+
+## Output Security
+- All user-controlled input that reaches a database query must be parameterized
+- All user-controlled input reaching an HTML context must be escaped
+- All user-controlled input reaching a shell command must be rejected — no exec()
+  with user input, no exceptions
+
+## Before Any Network Call
+Show me: what URL, what data is being sent, what credentials are used, what
+the response will be logged as. Wait for confirmation.
+```
+
+### `@rules/git.md`
+
+```markdown
+# Git Rules
+
+## Branch Strategy
+- Feature branches: feat/TICKET-ID-short-description
+- Bug fix branches: fix/TICKET-ID-short-description
+- Hotfixes: hotfix/TICKET-ID-short-description
+- Never work directly on main, master, or staging
+
+## Commit Format (Conventional Commits)
+type(scope): description in imperative present tense
+Types: feat, fix, refactor, test, docs, chore, perf, ci
+Examples:
+  feat(auth): add refresh token rotation
+  fix(jobs): prevent double-processing on queue reconnect
+
+## PR Protocol
+Before creating a PR:
+1. Run the full test suite locally
+2. Run /review on your own diff
+3. Check that every commit message is clean
+4. Confirm the branch is rebased on main, not merged
+
+## What Never Happens
+- Force push to any shared branch
+- Commit anything in .gitignore
+- Commit node_modules, .env, *.pem, or build artifacts
+- Squash commits without my explicit instruction
+```
+
+The same pattern extends to database rules (migration conventions, query patterns, naming), testing rules (coverage floors, test structure), and code-style rules. Each file is long by design — loaded only when that domain is active. The attention budget for a coding session doesn't spend on database rules when you're writing a README. But when Claude is generating a migration, it loads the full contract and follows it.
+
+---
+
+## Layer 5: MCP Servers (`.mcp.json`)
+
+MCP is the connection layer between Claude Code and external systems. Each server exposes tools Claude can call: read a ticket, create a PR, query a database, fetch documentation.
+
+### Scope: where the config lives
+
+```bash
+# Project scope — committed to repo, shared with team
+claude mcp add --scope project --transport http notion https://mcp.notion.com/mcp
+
+# User scope — personal, not committed
+claude mcp add --scope user --transport http linear https://mcp.linear.app/mcp
+
+# Verify what's loaded
+claude mcp list
+```
+
+Project scope for team-standard tools with safe read/write access to the repo's systems. User scope for personal tools, personal auth, and anything about how *you* work rather than how the *project* works.
+
+### Keeping `.mcp.json` clean
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PAT}"
+      }
+    }
+  }
+}
+```
+
+Two rules: no secrets in the file (use environment variables), and only servers the whole team uses. Personal servers go in user scope and stay out of source control.
+
+### Trust and prompt injection risk
+
+Every MCP server that fetches external content is a potential injection vector. A server that reads Slack messages and surfaces them as context can be fed a message that says "ignore previous instructions." Treat external-content servers the way you treat external dependencies: verify the source, pin versions, scope permissions to the minimum needed. Before connecting a server, read what tools it exposes and what data it can access. Connect in project scope only when the whole team has agreed on the trust boundary.
+
+---
+
+## Layer 6: Hooks (`settings.json`)
+
+A rule in CLAUDE.md is visible to the model and can be reasoned about, which means it can be overridden if the model decides another consideration outweighs it. A hook runs outside Claude's context. The model cannot talk itself out of a hook.
+
+I had "never edit .env files" in my identity file for three months. During those three months, Claude edited a .env file once — during a long agentic session, there was a plausible-sounding reason, and the rule lost to context. After I moved it to a hook, it has never happened again. The hook doesn't care about plausible-sounding reasons.
+
+### Hook architecture
+
+Hooks fire at specific lifecycle events. They receive the tool payload as JSON on stdin. Parse with `jq`, check conditions, exit cleanly (allow) or `exit 2` (block with a reason).
+
+```
+PreToolUse     → fires before a tool executes. Can block.
+PostToolUse    → fires after a tool runs. Can modify output.
+Stop           → fires when Claude signals task completion. Can re-open.
+```
+
+Hooks live in `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "~/.claude/hooks/pre-tool-use.sh" }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          { "type": "command", "command": "~/.claude/hooks/pre-write.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          { "type": "command", "command": "~/.claude/hooks/post-write.sh" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "~/.claude/hooks/stop-hook.sh" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### `pre-tool-use.sh` — the security gate
+
+```bash
+#!/usr/bin/env bash
+PAYLOAD=$(cat)
+CMD=$(echo "$PAYLOAD" | jq -r '.tool_input.command // ""')
+
+# Block direct push to main or master
+if echo "$CMD" | grep -qE 'git[[:space:]]+push.*(main|master)'; then
+  echo "BLOCKED: Direct push to main is forbidden. Use a feature branch." >&2
+  exit 2
+fi
+
+# Block rm -rf
+if echo "$CMD" | grep -qE 'rm[[:space:]]+-[^[:space:]]*r[^[:space:]]*f'; then
+  echo "BLOCKED: rm -rf is blocked. Use trash or confirm file-by-file." >&2
+  exit 2
+fi
+
+# Block operations on credential files
+if echo "$CMD" | grep -qE '(\.env|id_rsa|id_ed25519|\.pem|\.key|credentials)'; then
+  echo "BLOCKED: Command references a credential or secrets file." >&2
+  exit 2
+fi
+
+# Block curl/wget piped to bash (supply chain attack vector)
+if echo "$CMD" | grep -qP '(curl|wget).*\|.*(sh|bash|zsh)'; then
+  echo "BLOCKED: curl/wget piped to shell. Review the script content first." >&2
+  exit 2
+fi
+
+# Block DELETE without WHERE clause
+if echo "$CMD" | grep -qiE '(DELETE[[:space:]]+FROM|TRUNCATE[[:space:]]+TABLE)[^;]*;' && \
+   ! echo "$CMD" | grep -qi 'WHERE'; then
+  echo "BLOCKED: DELETE or TRUNCATE without WHERE clause." >&2
+  exit 2
+fi
+
+exit 0
+```
+
+### `pre-write.sh` — secrets file protection
+
+```bash
+#!/usr/bin/env bash
+PAYLOAD=$(cat)
+FILE=$(echo "$PAYLOAD" | jq -r '.tool_input.path // ""')
+
+if echo "$FILE" | grep -qE '(\.env|\.env\.[a-z]+|secrets\.(json|yaml|yml|toml))$'; then
+  echo "BLOCKED: Write to secrets file $FILE is forbidden. Edit manually." >&2
+  exit 2
+fi
+
+PROJECT_ROOT=$(pwd)
+RESOLVED=$(realpath "$FILE" 2>/dev/null || echo "$FILE")
+if [[ ! "$RESOLVED" == "$PROJECT_ROOT"* ]]; then
+  echo "BLOCKED: Write to $FILE is outside the project directory." >&2
+  exit 2
+fi
+
+exit 0
+```
+
+### `stop-hook.sh` — tests must pass before task completion
+
+This is the hook that closes the trust-then-verify gap.
+
+```bash
+#!/usr/bin/env bash
+# Fires when Claude signals task completion
+# If tests fail, exit 1 returns failure to Claude's context
+# Claude resumes and tries to fix
+
+if [ ! -f ".claude/test-command.txt" ]; then
+  exit 0
+fi
+
+TEST_CMD=$(cat .claude/test-command.txt)
+echo "Running test suite before task completion: $TEST_CMD" >&2
+OUTPUT=$(eval "$TEST_CMD" 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "TEST SUITE FAILED. Task is not complete." >&2
+  echo "$OUTPUT"
+  exit 1
+fi
+
+echo "Test suite passed. Task completion approved." >&2
+exit 0
+```
+
+Each project has a `.claude/test-command.txt` with one line: `pnpm test --run`. Claude cannot mark a task complete while the test suite is red. Not because it was asked to run the tests — because the stop hook blocks the completion signal until they pass. This single hook has caught more real bugs in production-bound code than any review step I've added.
+
+**What breaks in practice:** hooks that are too aggressive. A hook blocking all bash and requiring manual confirmation on every command defeats the purpose of agentic execution. Scope hooks to specific matchers — `Bash(git push*)` rather than `Bash` — so the pre-approved list stays narrow and targeted.
+
+**The fix:** start with one hook. The "no push to main" block. Run it for a week. Add hooks only when you find a real gap — not because a rule exists in CLAUDE.md, but because you caught Claude violating it in a session.
+
+---
+
+## Layer 7: Skills (`~/.claude/skills/`)
+
+Skills are slash-command workflows — executable procedures that run within your current session. A prompt asks Claude to do something. A skill defines the exact protocol for doing it, step by step, with specific output formats and failure modes. A skill removes variation from repeated work.
+
+### `/review` — the pre-commit audit
+
+This runs before every commit. It has caught real security issues, real missing tests, and real cases where Claude fixed the function I pointed at and broke the one that called it.
+
+```markdown
+---
+name: review-pr
+description: Full pre-commit review across security, correctness, test coverage, quality.
+---
+
+## Phase 1: Security Scan (run first, always)
+Check for:
+- Hardcoded credentials, API keys, tokens, passwords
+- SQL injection — user input reaching a query without parameterization
+- XSS — user input reaching HTML without escaping
+- Exposed internal paths in error messages
+- Insecure direct object references
+- Any use of eval(), exec() with user input
+
+If Critical found, STOP and report before continuing.
+
+## Phase 2: Correctness
+Check for:
+- Functions that handle the success path but silently ignore edge cases
+- Async code without proper error handling
+- Race conditions — concurrent writes without locks
+- Off-by-one in loops or pagination
+- Boundary conditions: empty input, null, undefined, 0
+
+## Phase 3: Test Coverage
+Check for:
+- New functions with no corresponding test
+- Tests that test the happy path but nothing else
+- Vacuous tests that pass even without the implementation
+- Missing tests for edge cases found in Phase 2
+
+## Phase 4: Code Quality
+Check for:
+- Functions over 40 lines
+- Nested conditionals deeper than 3
+- Variable names requiring a comment to understand
+- Comments explaining *what* instead of *why*
+- Duplicated logic
+
+## Output Format
+### Review Report
+**Critical** (must fix before commit): [issue] — [file:line]
+**Advisory** (fix before merge): [issue] — [file:line] — [suggested fix]
+**Nit** (optional): [issue] — [file:line]
+**Verdict:** APPROVED / BLOCKED
+```
+
+### `/debug` — systematic diagnosis
+
+The most intellectually valuable skill I've written, because it forces a diagnostic discipline I was bad at naturally.
+
+```markdown
+---
+name: debug
+description: Five-phase debugging protocol. Hypothesis before code changes.
+---
+
+## Phase 1: Reproduce
+Confirm exact reproduction steps, deterministic vs intermittent,
+when it started, what changed, what the failure looks like exactly.
+
+## Phase 2: Isolate
+Narrow to smallest possible code surface. Which service, file, function?
+What boundaries — where does bad data enter, where does failure surface?
+
+## Phase 3: Hypothesize
+Exactly three ranked hypotheses. Mandatory — do not skip.
+1. [Most likely] — [Evidence] — [Verification method]
+2. [Second] — [Evidence] — [Verification method]
+3. [Third] — [Evidence] — [Verification method]
+
+Do not write code until I confirm which hypothesis to pursue.
+
+## Phase 4: Verify
+Test the hypothesis before fixing. Show the root cause.
+
+## Phase 5: Fix
+Minimal fix for verified root cause. Not a refactor. Not an improvement.
+Smallest change that closes the gap. Run the test suite. If tests don't
+exist for this case, write one — it should fail without the fix and
+pass with it.
+```
+
+### `/simplify` and `/spec`
+
+**`/simplify`** — same-inputs-same-outputs complexity reduction. No API changes. No feature removal. Remove the complexity instead of writing a comment around it. Run the test suite after each simplification.
+
+**`/spec`** — write the specification before the code. Generates problem statement, scope, interface design, failure case analysis, and test plan. I commit it to `docs/specs/` and approve it before implementation starts.
+
+---
+
+## Layer 8: Agents and Personas (`~/.claude/agents/`)
+
+Skills handle workflows within a session. Agents are persistent personas — sub-processes with their own tool access, their own behavioral constraints, their own context boundary. The key architectural point: agents don't inherit your session context automatically. When Claude spawns a sub-agent, it starts with a clean context. The agent definition must explicitly reference the rules it operates under, or it's operating without your constraints.
+
+Personas are simpler than agents — they're narrow behavioral contracts for specific task types. The reviewer persona does not write code. The implementer persona does not comment on architecture. Constraint is the point.
+
+### The Reviewer persona
+
+```markdown
+---
+name: reviewer
+description: Code review — reads, evaluates, comments. Does not edit.
+---
+
+You are a code reviewer. Produce a structured review: what's broken,
+what's fragile, what's missing tests, what could be simpler.
+You do not write code. You do not suggest rewrites.
+You identify problems and explain why they are problems.
+
+Output: Critical (must fix) / Advisory (fix before merge) / Nit (optional)
+```
+
+### The Chief of Staff agent
+
+This is the most complex agent I run. It reads calendar, email, and task tracker to produce a structured morning brief.
+
+```markdown
+---
+name: chief-of-staff
+description: Morning brief, inbox triage, commitment tracking.
+---
+model: claude-sonnet-4-6
+tools:
+  - google_calendar
+  - gmail
+  - linear
+
+# Identity
+You are my Chief of Staff. Surface what matters today and eliminate noise.
+You have no authority to send, post, or modify anything without showing
+me a draft and receiving explicit approval.
+
+# Morning Brief Protocol
+## 1. Priority Alerts
+Check: calendar for today, Linear P0/P1, Gmail flagged and recent.
+Surface only items requiring a decision or action from me today.
+
+## 2. Meeting Pre-Reads
+For each calendar event with external attendees: who's attending, agenda,
+what not to agree to without more info, what success looks like.
+
+## 3. Commitment Tracker
+Check sent email and Linear comments from the past 7 days for promises.
+Cross-reference against what I've delivered.
+
+## 4. Inbox Triage
+Sort into: Reply today, Reply this week, FYI only, Unsubscribe candidate.
+Show me the triage. Do not reply until I approve.
+```
+
+### The Research agent
+
+```markdown
+---
+name: researcher
+description: Deep-dive with citations. Never fills knowledge gaps.
+---
+tools:
+  - brave_search
+  - fetch
+  - context7
+
+# Identity
+You are a research agent. Every claim backed by a source you fetched.
+If you can't find a source, say so. "I could not find a reliable source"
+is a valid and valuable output.
+
+# Protocol
+1. Scope definition — core question, complete answer criteria, boundaries
+2. Source strategy — primary sources first, secondary second
+3. Research — 6-15 sources, full content fetched
+4. Synthesis — summary, detail sections, open questions, sources with URLs
+
+## Output
+Markdown ready to commit to docs/research/. Confidence: High/Medium/Low.
+```
+
+### The Implementer agent
+
+```markdown
+---
+name: implementer
+description: Code-only. Executes approved specs. No architectural opinions.
+---
+model: claude-sonnet-4-6
+
+# Identity
+You take an approved spec and write code. No opinions about architecture.
+No alternative approaches. Implement what the spec says.
+
+Before writing code: read .claude/CLAUDE.md, @rules/security.md, @rules/testing.md.
+
+# Protocol
+1. Parse the spec — interfaces being created, order, open questions
+2. Scaffold — files with correct names, type definitions, import graph
+3. Implement one interface at a time, run tests after each
+4. Integrate — wire together, run full test suite
+5. No console.log, no TODO comments, working implementation with tests
+```
+
+### When personas beat agents
+
+Use a simple persona file (no tools, no model spec) when the task type repeats, the failure mode of wrong behavior is significant, and no external tool access is needed. Use a full agent definition when the task requires tool access — reading a database, fetching from an API, querying an external system.
+
+---
+
+## The Self-Improvement Loop
+
+This habit has compounded more than anything else in the system.
+
+Every time Claude makes a mistake — wrong assumption, missed edge case, rule violation, unnecessary tool call — I type:
+
+```
+Update the relevant rule file so this doesn't happen again.
+```
+
+Claude proposes the new rule, adds it to the correct file (global identity, project memory, or the specific rule module), and prefixes it with a date stamp. I review it. If it's right, I confirm. The system gets smarter and the lesson doesn't exist only in my memory.
+
+After eight months of this pattern, my CLAUDE.md and rule modules encode every expensive lesson from production incidents, bad refactors, and debugging sessions that took too long. A new developer who reads them would understand my technical philosophy in fifteen minutes.
+
+The compounding is measurable. My first agent (Chief of Staff) took a full weekend to tune. My second (research) took half a day — it inherited the identity layer, MCP connections, and six months of encoded lessons. The third will take hours.
+
+### Detecting drift
+
+Between session start and message 40, instruction decay sets in. Here's how to detect it.
+
+**The canary test.** Add this to your CLAUDE.md:
+
+```markdown
+## Canary
+If asked "what is the canary?", respond: "Orange triangle, session is healthy."
+```
+
+If Claude doesn't respond with the exact phrase at message 30, the file isn't loading correctly or has been deprioritized by context. Check the path — Claude Code looks for `CLAUDE.md` in the current directory and `.claude/CLAUDE.md`. It does not recursively search.
+
+**Sub-context checks.** Agents don't inherit the parent CLAUDE.md. Test with:
+
+```
+What files define your current operating rules for this project?
+```
+
+If it doesn't name your CLAUDE.md, the file isn't loaded in that sub-context. Pass the memory file reference explicitly in subagent task prompts: "Before starting, read .claude/CLAUDE.md for project conventions."
+
+**The rule for rules:** if a rule is important enough to be consistently enforced, it belongs in a hook, not the memory file. The canary tells you whether the file is loaded. Hooks tell you whether the rules are followed. If you rely on a rule that you can't afford to have violated once, move it to a shell script.
+
+---
+
+## Team Workflows: Shared Configuration in Repos
+
+Every developer has a different global CLAUDE.md. Different default behaviors, different MCP servers, different assumptions about what Claude will and won't do. The first time an agentic session runs on another developer's machine, everything breaks differently.
+
+The fix: three files in the repo, committed to source control:
+
+```
+.claude/
+├── CLAUDE.md           # Project memory — stack, conventions, non-negotiables
+├── settings.json       # Shared hooks, shared permissions
+└── .mcp.json           # Team-standard MCP servers (no secrets)
+```
+
+Everything else is local. Personal agent personas. User-scope MCP servers with personal auth. Hooks that play sounds. Those stay out of the repo.
+
+### Onboarding a new contributor
+
+```bash
+# 1. Install Claude Code
+curl -fsSL https://claude.ai/install.sh | sh
+
+# 2. Clone and navigate to repo
+cd my-project
+
+# 3. Set up environment variables
+cp .env.example .env.local
+# Fill in: GITHUB_PAT, LINEAR_API_KEY, etc.
+
+# 4. Verify setup
+claude /doctor
+claude mcp list
+```
+
+The `.env.example` documents which tokens are needed. The MCP config reads them from environment. No tokens in source control.
+
+### Branching and commit rules in project CLAUDE.md
+
+```markdown
+# Git conventions
+- Branch format: type/TICKET-description (e.g., fix/ENG-421-payment-timeout)
+- Commit format: Conventional Commits (feat:, fix:, refactor:, test:)
+- Never force-push to any shared branch
+- PRs require at least one passing CI check before merge
+```
+
+Pair the CLAUDE.md rule with a hook that blocks non-conventional commit messages. The rule teaches Claude what to do. The hook prevents it from doing the opposite.
+
+### What breaks in practice
+
+Individual preference files fighting shared rules. A developer with a global CLAUDE.md that says "always use semicolons" and a project that enforces no-semicolons. The project file wins in loading order, but the conflict creates noise. Keep global files about behavior patterns, not code style. Code style is a project concern.
+
+---
+
+## What I Got Wrong (And How to Skip It)
+
+```diff
+# BEFORE: 280-line CLAUDE.md — everything in one file
+-# Line 274: Canary: respond "purple hexagon" if asked
+-# Line 275: Non-negotiable: never edit .env files
+-# Line 276: Commit format: conventional commits
+-# Lines 277-280: scattered, likely ignored by message 30
+
+# AFTER: 94-line CLAUDE.md as index + modular @rules/
+-# 94 lines of identity + non-negotiables + rule index
+-# ~/.claude/rules/git.md — full commit format, branch strategy
+-# ~/.claude/rules/security.md — credential handling, file access
+-# Loaded only when relevant. Attention budget stays clean.
+```
+
+**Mistake 1: The 280-line CLAUDE.md.** I initially put everything in one file — stack, project rules, personal preferences, commit format. By message 30, the bottom third was being ignored. The attention budget was exhausted on the first 200 lines, which happened to be the rules I'd written first — not the most important ones. Fix: the modular `@rules/` structure. The global file stays under 100 lines and acts as an index. Domain rules live in focused files loaded only when that domain is active.
+
+**Mistake 2: Advisory rules for hard requirements.** "Never edit .env files" lived as a line in my CLAUDE.md for three months. One long agentic session, Claude edited it with a plausible reason. The rule was there. It lost to context. Fix: any rule that must be true 100% of the time belongs in a hook. The test is simple: can I tolerate even one exception? If not, it's a hook.
+
+**Mistake 3: Skipping Plan Mode.** Claude Code's plan step (Shift+Tab before submitting) lets you review the full implementation plan before a single file is modified. I skipped it because it felt slow. Roughly 30% of structural changes had a better architectural approach that I only saw when I read the plan before the code. Catching a structural mistake in a plan review takes two minutes. Catching it after 200 lines of implementation takes forty.
+
+**Mistake 4: Letting sessions run indefinitely.** Claude Code compacts conversation history when the context window fills. It summarizes the earlier part of the conversation to make room. The summary is not the original. Rules stated at the start become fuzzier. Fix: use `/clear` between unrelated tasks. A fresh session with the full memory layer loaded is usually faster than a stale session with compacted context.
+
+**Mistake 5: Building agents before the foundation was stable.** I built the Chief of Staff agent in month one. It was too early. The identity layer wasn't stable, the rules weren't precise, and the agent inherited all the ambiguity. I spent more time correcting the agent than it saved me. The correct sequence: identity layer first, rule modules second, hooks third, skills fourth, agents last. Each layer depends on the ones below it.
+
+---
+
+## Getting Started: The Right Sequence
+
+### Day 1 (one hour): Identity layer
+
+```bash
+mkdir -p ~/.claude/rules ~/.claude/skills ~/.claude/agents ~/.claude/hooks
+touch ~/.claude/CLAUDE.md
+```
+
+Open `~/.claude/CLAUDE.md` and answer four questions:
+1. How should Claude communicate with me?
+2. What five things must Claude never do?
+3. What are my technical defaults when no project file exists?
+4. What rule modules will I eventually write?
+
+Keep it under 100 lines. Every word costs attention budget.
+
+### Day 2 (two hours): First rule module and first hook
+
+Write `@rules/git.md` — git conventions are the most consistent rules and violations are immediately visible. Write `pre-write.sh` with two rules: block `.env` file writes and block writes outside the project directory. These two hooks solve the most common categories of agentic accidents.
+
+```bash
+# In a Claude Code session
+"Write a test line to .env"  # Should be blocked
+"Write a test line to /tmp/test.txt"  # Should be blocked
+```
+
+### Day 3 (two hours): First skill and stop hook
+
+Write the `/review` skill. Customize the security scan section for your stack. Write `stop-hook.sh` and create `.claude/test-command.txt` in one active project. Run a session that makes a code change and confirm the test suite runs automatically before task completion.
+
+### Week 2: First project CLAUDE.md
+
+Pick one active repo. Write the project CLAUDE.md using the template in Layer 3. Run `/doctor` and confirm both global and project files appear in the loaded context list.
+
+### Weeks 3-4: First agent
+
+Not before. The foundation needs two weeks of real use before you know what the agent should inherit. Write the agent definition, test it against three real scenarios, find where it's wrong, and update the definition. Budget four hours of tuning before trusting it.
+
+### Weeks 5-8: Hooks, measurement, and team config
+
+Add the "no push to main" hook and the stop-hook. Run the same task type twice: once with raw prompts in a fresh session (no CLAUDE.md, no MCP, no hooks), once with your full structured setup. Measure five numbers:
+
+| Metric | Raw prompt | Structured | Delta |
+|---|---|---|---|
+| Task completion time | — min | — min | —% |
+| Correction rounds | — | — | — |
+| Failures requiring human fix | — | — | — |
+| Token cost | $— | $— | —% |
+| Files touched unnecessarily | — | — | — |
+
+A well-configured setup typically reduces correction rounds by 40-60%. Token cost can go either direction — richer context costs more but prevents expensive correction loops.
+
+### Weeks 9-12: Optimization
+
+Benchmark three different task types: a feature implementation, a refactor, and a debugging session. Identify which metric has the worst delta. Fix the gap — whether that's a missing hook, a weak memory section, or a persona that needs tightening. Repeat.
+
+The goal at week 12 is not a setup that's impressive. It's a setup that's boring — because it works the same way every time.
+
+---
+
+## The Operator Mindset
+
+The shift I'm describing is a different relationship to the tool.
+
+A chatbot user submits prompts and evaluates responses. An agent operator builds the environment the agent runs in, defines the rules it operates under, provisions the tools it needs, and sets the gates that verify its work. The operator's primary work is not per-session supervision. It's system design and system improvement.
+
+The output difference is not incremental. The same task run against a raw Claude session vs. a session with identity, rules, hooks, and skills produces qualitatively different results — not because the model changed, but because the system changed. The model is equally capable in both cases. In the first, its capabilities are bounded by what you type this session. In the second, they're bounded by everything you've ever learned and encoded.
+
+That's the compounding effect. Six months of operating this system feels different from six months of prompting. The prompting gets you six months of decent outputs. The operating gets you a system that's dramatically more capable in month six than it was in month one — and continues to improve every week.
+
+```bash
+# The practical first step
+mkdir -p ~/.claude && touch ~/.claude/CLAUDE.md
+# Write three non-negotiables. Write your technical defaults.
+# Run a session and verify it loads:
+claude /doctor
+```
+
+The system starts compounding from the first rule.
+
+---
+
+**The full Personal Claude OS — all files: global identity, rule modules, skills, agents, hook scripts, MCP config, project templates, and the self-improvement loop. Ready to install. Copy to `~/.claude/` and you're operational.**
+
+→ **[Personal Claude OS on Gumroad — $29](https://gumroad.com/rachidhakim)**
+
+---
+
+*→ For deep dives on agent memory systems: [Building AI Agent Systems](/blog/building-ai-agent-systems)*

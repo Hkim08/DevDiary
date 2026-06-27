@@ -1,7 +1,7 @@
 ---
 title: 'DOCR: I Built a React App That Extracts Structured JSON from Invoices Using Claude Vision'
 description: 'How I built a browser-native invoice OCR app using React 18, Claude Vision, and PDF.js — with a 5-step extraction pipeline, three result views, and CSV/JSON export.'
-pubDate: 2026-06-26
+pubDate: 2026-06-27
 author: 'Rachid Houmayni'
 image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200'
 category: 'Products'
@@ -150,13 +150,34 @@ The upgrade buttons in the modal are hooks for the buyer to wire up their own St
 
 ## The API Key Problem
 
-This is the main design constraint: Claude's API is called directly from the browser. The user's API key is exposed in the browser's dev tools. For a local development tool that runs on the user's machine, this is acceptable. For a production SaaS, you would add a lightweight proxy server between the browser and Anthropic.
+This is the main design constraint: Claude's API is called directly from the browser. The user's API key is exposed in the browser's dev tools:
+
+```javascript
+// In browser dev tools — anyone can read the key from localStorage
+> localStorage.getItem('ANTHROPIC_API_KEY')
+'sk-ant-...' // Your key, in plain text
+```
+
+For a local development tool that runs on the user's machine, this is acceptable. For a production SaaS, you would add a lightweight proxy server between the browser and Anthropic.
 
 The app is designed as a local tool or internal workflow automation. If you need a proxy, the architecture is simple enough to add one — the API call is a single function in `api.js`.
 
 ## Shipping as Source Code
 
 I priced DOCR at $29 — one-time, full React source code. You get the complete app, modify it for your use case, deploy it anywhere, and use your own API key.
+
+```text
+docr/
+├── src/
+│   ├── api.js              ← Claude Vision API call (swap for proxy)
+│   ├── Pipeline.jsx         ← 5-step extraction pipeline
+│   ├── ResultsView.jsx      ← Three-tab result viewer
+│   ├── UpgradeModal.jsx     ← Freemium gate (configurable limits)
+│   └── index.jsx
+├── public/
+├── package.json
+└── vite.config.js
+```
 
 What you build with it:
 - Automated accounts payable workflow
@@ -165,3 +186,7 @@ What you build with it:
 - Reference implementation for Vision API extraction patterns
 
 The extraction schema is the most valuable part — the system prompt took 5 iterations to get right, and the JSON structure covers everything a bookkeeper needs.
+
+---
+
+The full React source code — 5-step pipeline, three result views, freemium gate, PDF support — is available as a one-time download. Drop it into your project, add your API key, and you are running. [Get DOCR Invoice OCR →](https://ubix08.gumroad.com/l/docr-app)

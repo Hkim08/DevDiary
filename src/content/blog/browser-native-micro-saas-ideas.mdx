@@ -1,7 +1,7 @@
 ---
 title: 'Browser-Native Micro-SaaS: 6 Product Ideas That Need Zero Backend Infrastructure'
 description: '6 profitable browser-native micro-SaaS product ideas using WebGPU, WASM, and on-device AI — with zero server infrastructure and no data egress.'
-pubDate: 2026-06-26
+pubDate: 2026-06-27
 author: 'Rachid Houmayni'
 image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200'
 category: 'Products'
@@ -87,7 +87,7 @@ const fields = await localLLM.extract(data.text, invoiceSchema);
 // Result: { invoice_no, date, vendor, line_items, total }
 ```
 
-Monetization: one-time purchase ($19) or subscription for recurring use. The key differentiator is that no document image ever leaves the user's machine.
+Monetization: one-time purchase ($19) or subscription for recurring use. The key differentiator is that no document image ever leaves the user's machine. This is the same approach I used in [DOCR Invoice OCR](/blog/docr-invoice-ocr-claude-vision), which runs Claude Vision from the browser for structured invoice extraction.
 
 ## 4. Medical Scribe (Local)
 
@@ -161,3 +161,7 @@ The common pattern: build complexity is in the WebGPU/WASM integration layer. On
 I packaged the full analysis — architecture breakdowns, pricing recommendations, SEO strategy, and reusable patterns — into an interactive HTML report. 53 KB, works offline, yours forever.
 
 If you are looking for your next micro-SaaS build, this report saves you the 40 hours of research I already did. The architecture patterns alone are worth more than the $19 price tag.
+
+---
+
+Full interactive report — architecture breakdowns, pricing, SEO strategy, reusable patterns — packaged as a 53 KB offline HTML file. [Get the WASM Micro-SaaS Explorer →](https://ubix08.gumroad.com/l/wasm-microsaas-explorer)
