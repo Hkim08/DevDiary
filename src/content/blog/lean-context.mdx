@@ -1,0 +1,127 @@
+---
+title: 'Your AI Coding Agent Is Reading Code It Doesn’t Need'
+description: 'Your coding agent burns context reading code it never reasons about. Here is how AST-aware compression cuts 30-50% of those tokens, locally and read-only.'
+pubDate: 2026-10-09
+author: 'Rachid Houmayni'
+category: 'Claude Code'
+readingTime: '6 min read'
+tags: ['claude-code', 'cursor', 'context-window', 'token-optimization', 'ast', 'python', 'ai-agents']
+featured: false
+coverType: 'code'
+draft: false
+---
+
+*Every function body, comment, and blank line your agent reads is a token you paid for — and context you cannot spend on the task.*
+
+The expensive part of an AI coding session is rarely the answer. It is the reading.
+
+When you ask an agent to "map this repo" or "refactor this module," the first thing it does is pull source files into its context window — whole files, function bodies, comments, imports, build artifacts. Most of that text has zero effect on the correctness of the response. You pay for it anyway, in tokens, in latency, and in the room it takes up before the agent can reason about anything real.
+
+This is not a prompting problem. It is a data-shaping problem. You can teach an agent to read less without teaching it less.
+
+## Where the Tokens Actually Go
+
+Three situations blow up your context window:
+
+**1. The "understand this codebase" request.** You point an agent at a repo and it starts reading every file top to bottom. A few thousand lines later it is summarizing docstrings and has forgotten the question you asked. Worse, half the tokens went to `.git`, `dist`, `node_modules`, and generated files that were never relevant.
+
+**2. The 2,000-line file.** You need to know what a module *exposes* — classes, method signatures, docstrings. You do not need the body of every function to answer that. But a naive read loads the whole file.
+
+**3. The pre-review diff.** Before a code review you want the *shape* of a change: which files moved, how many lines each. Dumping the full unified diff into context is the least efficient way to get it.
+
+The cost is easy to see once you count it:
+
+```bash
+$ find . -name '*.py' -not -path './.git/*' | xargs wc -l | tail -1
+  41882 total     # and the agent is about to read all of it
+```
+
+In all three cases the agent is reading text it will never reason about. Repetition in a long session makes it worse: context you spent early is context you cannot spend later.
+
+## Parse the File, Don’t Regex It
+
+The fix is to compress source code before it reaches the model — and the safest way to compress Python is to parse it, not to regex it.
+
+A naive "remove comments and blank lines" pass is brittle. It breaks on strings that contain `#`, on multi-line strings, on decorators. An **abstract syntax tree** does not have that problem: the Python parser already knows structure from noise.
+
+Once you have the tree, "keep only the interface" becomes a tree walk:
+
+- keep `class` nodes and their names
+- keep `def` / `async def` nodes, their names, arguments, and return annotations
+- keep docstrings
+- drop the body of each function, replacing it with `...`
+- keep module-level constants and imports
+
+The output is a signature-only skeleton — the contract of the file without the implementation. For a typical module that is a 40–80% reduction, and it is *lossless for the question "what does this expose?"*
+
+```python
+# engine/core.py (compressed)
+class ExecutionEngine:
+    """Main orchestrator for task execution."""
+    def __init__(self, config: dict): ...
+    def register_handler(self, name: str, handler: Callable):
+        """Registers a new event handler."""
+        ...
+    def run_sync(self, task_id: str) -> Result:
+        """Executes a task synchronously."""
+        ...
+```
+
+An agent reading that can still answer "where do I add a handler?" without ever loading the bodies. I use the same trick inside a [personal Claude OS](/blog/claude-code-personal-os) to keep long sessions from blowing the budget mid-task.
+
+## Compress the Tree Before the Read
+
+Before reading any file, ask for a **skeleton**: an indented directory tree with the usual noise filtered out (`.git`, `node_modules`, `__pycache__`, `dist`, `build`, `venv`). That one cheap call tells the agent which files are worth a deeper look, so it never spends tokens on the ones that are not.
+
+```text
+app/                         app/
+├── .git/          ->        ├── api/
+├── node_modules/             │   ├── routes.py
+├── dist/                     │   └── schemas.py
+├── src/                      ├── services/
+│   ├── api/                  │   └── billing.py
+│   ├── services/             └── main.py (142 lines)
+│   └── main.py
+└── venv/
+```
+
+## Bound the Context Window With a Budget
+
+Compression only helps if it is bounded. Give the loop a hard token budget per cycle (say 3,000 tokens) and make the tool **stop and ask** when a request would exceed it:
+
+```text
+TOKEN EFFICIENCY SUMMARY (lean-context v1.0.0)
+Original Context  : ~3,990 tokens
+Compressed Context: ~910 tokens
+Total Reduction   : 77% saved
+```
+
+A visible summary turns "the agent feels cheaper" into a number you can check. A budget guard turns "I hope this session doesn't explode" into a checkpoint. This is the same discipline as running a single [production MCP config](/blog/mcp-server-production-configuration) instead of a kitchen sink of servers — bound the surface, keep the useful parts.
+
+## Read-Heavy Work Only
+
+Use context compression when your work with an agent is read-heavy. The decision is mechanical:
+
+```text
+USE  when the task is: explore repo / review a diff / long session / metered API
+SKIP when the task is: line-by-line bug hunt inside one function
+                        (the body is the thing you actually need)
+```
+
+Skip it when the task genuinely needs implementation detail — a line-by-line bug hunt inside a specific function, or a refactor that depends on how a body is written.
+
+Know the boundary: lean-context is **Python-only today**. TypeScript and JavaScript are not supported in this version. It runs as a local, read-only sidecar: no network calls, no writes, no `eval` of the files it reads — the compression is a pure function from file text to skeleton text.
+
+Parse, do not strip. Keep the interfaces first. Make the savings visible, and put a human checkpoint on the budget. Those four moves are what stop a "quick look" from becoming a $20 session.
+
+## The Packaged Skill
+
+The patterns above are packaged as [lean-context](https://www.agensi.io/skills/lean-context): a `SKILL.md` extension plus a small Python sidecar that adds AST-aware file pruning, repo skeletons, git diff summaries, and token-budget guards to Claude Code, Cursor, Codex CLI, Windsurf, and any other agent that reads `SKILL.md`. Python 3.8+, standard library only, 100% local and read-only.
+
+```bash
+# the shortest version of the workflow
+python3 lean_context.py skeleton ./src     # see the shape first
+python3 lean_context.py file engine/core.py # then read signatures only
+```
+
+30-day refund. AI assistance was used in authoring this article and the product documentation. If you want the deeper Claude Code operating patterns behind this, the [complete mastery guide](/blog/claude-code-complete-mastery-guide) is the place to start.
