@@ -8,7 +8,13 @@ import PostsGrid from '../components/PostsGrid.astro';
 import Expertise from '../components/Expertise.astro';
 import Newsletter from '../components/Newsletter.astro';
 import Footer from '../components/Footer.astro';
+import { getCollection } from 'astro:content';
+import { products } from '../data/products';
 import '../styles/global.css';
+
+const posts = (await getCollection('blog')).filter((p) => !p.data.draft);
+const articleCount = posts.length;
+const productCount = products.length;
 ---
 
 <BaseLayout
@@ -19,7 +25,7 @@ import '../styles/global.css';
 
   <main id="main">
     <Hero />
-    <StatsStrip />
+    <StatsStrip articleCount={articleCount} productCount={productCount} />
     <PostsGrid />
     <Expertise />
     <Newsletter />

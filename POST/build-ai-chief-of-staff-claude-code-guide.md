@@ -20,7 +20,7 @@ A **Claude Code Personal OS** ends the plateau. It is a localized, self-improvin
 
 This guide gives you the complete blueprint: architecture, installation, configuration, and optimization — step by step.
 
-> **Note:** This is the comprehensive how-to guide. If you want a 10-minute quick start instead, see [Claude Code Personal OS: 10-Minute Quick Start Setup](/blog/claude-code-personal-os-guide/). For the personal story behind my `~/.claude/` configuration, read [Personal Claude OS: How I Turned ~/.claude/ Into a Portable Productivity System](/blog/personal-claude-os/).
+> **Note:** This is the comprehensive how-to guide. If you want a 10-minute quick start instead, see [Claude Code Personal OS: Turn ~/.claude/ Into an Operating System](/blog/claude-code-personal-os/). For the personal story behind my `~/.claude/` configuration, read [Personal Claude OS: How I Turned ~/.claude/ Into a Portable Productivity System](/blog/personal-claude-os/).
 
 ---
 

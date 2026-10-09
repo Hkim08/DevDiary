@@ -201,4 +201,28 @@ export const products: Product[] = [
       { q: 'Can I customize the email templates?', a: 'Absolutely. Every template is plain text — edit them to match your voice. The 50 templates are starting points, not scripture.' },
     ],
   },
+  {
+    name: 'B2B Lead-Gen & Outreach SOP Bundle', slug: 'b2b-lead-gen-sop-bundle',
+    tagline: 'Run cold outbound solo with an AI agent + Notion CRM',
+    desc: 'An AI-agent + Notion CRM + Make.com system for B2B cold outreach: lead discovery, waterfall enrichment, domain warmup, and quarantine-safe sending. For solo founders.',
+    descriptionLong: 'The B2B Cold Outreach Ops System is a complete prospecting pipeline for solo founders and consultants. It ships with a local AI agent skill (SKILL.md) that handles discovery and waterfall enrichment, a 4-database Notion CRM blueprint, and an importable Make.com automation that routes qualified leads to Notion and flags unverified emails for human review.\n\nEverything is designed for domain safety: SPF/DKIM/DMARC setup, 30-day mailbox warmup, and quarantine-safe lead routing are baked into the SOP. Includes 50+ email templates, sample lead enrichment files, and a Lost Deal Analysis workflow to compound your close rate over time.\n\nNo SaaS fees. No team required.',
+    price: 149, badge: null,
+    icon: '🚀',
+    features: [
+      'Local AI agent skill (SKILL.md) for automated lead discovery and waterfall enrichment',
+      '4-database Notion CRM blueprint with weighted pipeline forecasting formulas',
+      'Importable Make.com automation for CRM sync and quarantine-safe lead routing',
+      '50+ battle-tested email templates for cold outreach, follow-up, and closing',
+      'Domain/warmup SOP: SPF/DKIM/DMARC setup and 30-day mailbox warmup protocol',
+      'Lost Deal Analysis workflow for surfacing churn patterns',
+    ],
+    highlights: ['Zero SaaS fees', 'Automated CRM sync', 'Domain safety SOPs', '50+ email templates'],
+    gumroadUrl: 'https://gumroad.com/l/b2b-lead-gen-sop', category: 'CRM & Outreach', hasLandingPage: true,
+    blogPosts: ['b2b-outreach-agent-waterfall-enrichment-verification-status'],
+    faq: [
+      { q: 'Is this a software-as-a-service?', a: 'No. This is a bundle of SOPs, blueprints, and automation templates that you deploy into your own Notion and Make.com accounts.' },
+      { q: 'Do I need a paid Notion/Make.com plan?', a: 'Notion’s free plan is sufficient for solo use. Make.com’s free tier is enough to get started with the included automation.' },
+      { q: 'Can I use this with any agent setup?', a: 'The included SKILL.md is standard-compliant and works with any agent runtime that supports file-based skills (Claude Code, etc.).' },
+    ],
+  },
 ];

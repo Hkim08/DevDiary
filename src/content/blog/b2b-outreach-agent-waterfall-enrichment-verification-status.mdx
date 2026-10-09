@@ -1,0 +1,81 @@
+---
+title: "My B2B Outreach Agent Marked a Catch-All Domain 'Verified' — Here's the Schema Bug"
+description: 'Building a waterfall enrichment pipeline for B2B lead gen exposed a gap: my CSV schema had no field for the one thing my error-handling policy depended on.'
+pubDate: 2026-08-29
+author: 'Rachid Houmayni'
+tags: ['ai-agents', 'b2b-lead-generation', 'notion-crm', 'make-automation', 'cold-email']
+category: 'AI Agents'
+readingTime: '7 min read'
+coverType: 'product'
+featured: true
+draft: false
+---
+
+`marcus.vance@apex-fintech.example.com` came back from my enrichment pipeline with no verification flag at all. The domain is a catch-all — it accepts mail for any local part, valid or not — which means the SMTP check that's supposed to protect my sender reputation had nothing to write its answer to. The CSV schema I'd shipped simply didn't have a column for it.
+
+I'd written the exception-handling policy correctly. I just hadn't wired it into the output.
+
+## The pipeline: four providers, one gate
+
+The SOP for the agent runs a strict waterfall, in this order:
+
+```
+[Raw List] --> [Firmographics Filter] --> [Apollo Lookup] --> [Findymail Fallback] --> [Hunter Lookup] --> [Verification Gate]
+```
+
+Firmographic filtering happens first — headcount, industry, region — so I'm not burning enrichment credits on accounts that were never going to qualify. Then Apollo runs as the first-line lookup, Findymail catches what Apollo misses, Hunter runs last to mop up anything un-scraped. NeverBounce or ZeroBounce close the loop at the verification gate.
+
+The rule I wrote into `SKILL.md` for that last step was unambiguous:
+
+> Unknown SMTP Status: If an email verification check returns an ambiguous or unknown SMTP status, the contact record must be marked as `quarantine` and immediately excluded from active campaign exports.
+
+Good policy. The problem was one layer down.
+
+## Where the schema fell apart
+
+My original output header was:
+
+```
+email,first_name,last_name,company,title,website,linkedin_url,reason,lead_id,qualified_at
+```
+
+Ten fields. Every one of them describes the lead. None of them describe what the verification gate decided about that lead. So when a record hit the catch-all-domain branch of my own exception-handling policy, the policy had somewhere to route the record — but the CSV had nowhere to record that routing happened. The record just came out looking identical to a fully verified one.
+
+That's not a cosmetic gap. The whole point of the quarantine rule is that a quarantined lead never reaches a sequencer. Without a field to carry that status downstream, the only thing enforcing the rule was hoping I remembered to check manually before every export.
+
+## Fixing it end to end
+
+I added `verification_status` to the schema and traced it through every layer that touches a lead record, not just the CSV:
+
+**`SKILL.md` output format:**
+
+```
+email,first_name,last_name,company,title,website,linkedin_url,reason,lead_id,qualified_at,verification_status
+```
+
+`verification_status` is one of three values: `verified`, `quarantine` (unknown SMTP status or an unresolved catch-all domain), or `unverified` (verification was explicitly skipped via the `verify_emails` input flag). Records marked `quarantine` are now excluded from sequencer-bound exports by schema, not by memory.
+
+**The Make.com blueprint** — the scenario that syncs qualified leads into my Notion CRM — picks up the same field. The webhook trigger's expected fields list grew by one entry, and the Notion `CreateDatabaseItem` module writes it straight into a new `Verification Status` select property on the Contacts database.
+
+**The Notion side** is where the fix actually becomes operational instead of theoretical. I added a filtered view on Contacts where `Verification Status = quarantine`, pointed at the manual-review board my HITL gate already required. I did *not* add a router step that auto-forwards quarantine records anywhere near the sequencer integration — the point of quarantine is that a human looks at it, so the routing goes to a review view, never to an automated send path.
+
+Here's the same lead again, after the fix, sitting next to one that actually cleared:
+
+```
+marcus.vance@apex-fintech.example.com,...,i9j0k1l2,2026-08-28T14:35:40Z,quarantine
+elena.rostova@cyberguard-networks.example.com,...,m3n4o5p6,2026-08-28T14:38:10Z,verified
+```
+
+Same schema, same pipeline run. One of them is safe to sequence. Now the file itself says which.
+
+## The other thing I found while I was in there
+
+Separately — and this one wasn't a schema bug, it was worse — my five-touch email sequence had a proof-point email that cited a specific number: a 35% CAC reduction and 14 qualified meetings for "a comparable mid-market growth team." I couldn't source either figure. I'd written it the way a lot of cold-email templates get written: as a plausible-sounding stat, not a real one.
+
+That's a problem the first time a prospect replies "which team?" I replaced the hardcoded number with a `{{proof_point}}` variable and a rule directly above it: insert a real, sourced outcome you can name if asked, or swap the email for a resource offer if you don't have one yet. A fabricated statistic in outreach copy someone else is going to send isn't a personalization detail. It's a liability I was about to hand off.
+
+## What's actually different now
+
+Every record that leaves the pipeline carries its own verification state instead of relying on the operator to remember the exception-handling policy from a separate document. The Notion CRM enforces the same HITL gate the SOP describes, instead of just describing it. And nothing in the outreach copy claims a result I can't back up.
+
+The full SOP — agent spec, Notion blueprint, Make.com scenario, and the email sequence with the proof-point rule built in — is packaged up as the [B2B Lead Generation & Outreach SOP Bundle](/products/b2b-lead-gen-sop-bundle).

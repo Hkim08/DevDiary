@@ -4,10 +4,43 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Nav from '../../components/Nav.astro';
 import CoverArt from '../../components/CoverArt.astro';
 import Footer from '../../components/Footer.astro';
-import { posts } from '../../data/posts';
+import { getCollection } from 'astro:content';
 import '../../styles/global.css';
 
-const categories = ['All', ...new Set(posts.map((p) => p.category))];
+type Post = {
+  slug: string;
+  data: {
+    title: string;
+    description: string;
+    pubDate: Date;
+    readingTime: string;
+    category: string;
+    featured: boolean;
+    coverType: 'neural' | 'radar' | 'code' | 'product' | 'doc';
+  };
+};
+
+const allPosts = (await getCollection('blog')).filter((p) => !p.data.draft);
+const posts: Post[] = allPosts.sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+const categories = ['All', ...new Set(posts.map((p) => p.data.category))];
+
+function categoryStyle(cat: string): string {
+  const map: Record<string, string> = {
+    'AI Agents': 'accent',
+    'Machine Learning': 'teal',
+    'Claude Code': 'accent',
+    Tutorials: 'default',
+    Products: 'amber',
+  };
+  return map[cat] ?? 'default';
+}
+
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+}
 ---
 
 <BaseLayout title="Blog — DevDiary.uk" description="All technical articles from DevDiary.uk">
@@ -38,19 +71,19 @@ const categories = ['All', ...new Set(posts.map((p) => p.category))];
 
     <section class="blog-list container" id="post-list" aria-label="Articles">
       {posts.map((post) => (
-        <article class="post-row" data-category={post.category}>
-          <a href={`/blog/${post.slug}`} class="post-row-link" aria-label={post.title}>
+        <article class="post-row" data-category={post.data.category}>
+          <a href={`/blog/${post.slug}`} class="post-row-link" aria-label={post.data.title}>
             <div class="post-thumb">
-              <CoverArt type={post.coverType} height={72} />
+              <CoverArt type={post.data.coverType} height={72} />
             </div>
             <div class="post-info">
               <div class="card-meta">
-                <span class={`badge ${post.categoryStyle}`}>{post.category}</span>
-                <span class="card-date font-mono">{post.date}</span>
-                <span class="card-date font-mono">· {post.readTime}</span>
+                <span class={`badge ${categoryStyle(post.data.category)}`}>{post.data.category}</span>
+                <span class="card-date font-mono">{fmtDate(post.data.pubDate)}</span>
+                <span class="card-date font-mono">· {post.data.readingTime}</span>
               </div>
-              <h2 class="post-title">{post.title}</h2>
-              <p class="post-desc">{post.description}</p>
+              <h2 class="post-title">{post.data.title}</h2>
+              <p class="post-desc">{post.data.description}</p>
             </div>
             <span class="post-arrow" aria-hidden="true">→</span>
           </a>

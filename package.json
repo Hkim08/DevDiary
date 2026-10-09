@@ -1,16 +1,24 @@
 {
-  "name": "devdiary-uk",
+  "name": "devdiary",
+  "type": "module",
   "version": "1.0.0",
-  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@astrojs/mdx": "^3.1.9",
-    "@astrojs/rss": "^4.0.18",
-    "@astrojs/sitemap": "^3.7.3",
-    "astro": "^4.15.0"
+    "@astrojs/rss": "^4.0.8",
+    "@astrojs/sitemap": "^3.2.1",
+    "astro": "^4.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "wrangler": "^4.105.0"
   }
 }

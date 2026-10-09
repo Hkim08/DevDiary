@@ -1,7 +1,32 @@
 ---
 // src/components/PostsGrid.astro
 import CoverArt from './CoverArt.astro';
-import { featuredPost, recentPosts } from '../data/posts';
+import { getCollection } from 'astro:content';
+
+const allPosts = (await getCollection('blog')).filter((p) => !p.data.draft);
+
+const featuredPost =
+  allPosts.filter((p) => p.data.featured).sort((a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf())[0] ??
+  allPosts[0];
+
+const recentPosts = allPosts
+  .filter((p) => p.slug !== featuredPost.slug)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+function categoryStyle(cat: string): string {
+  const map: Record<string, string> = {
+    'AI Agents': 'accent',
+    'Machine Learning': 'teal',
+    'Claude Code': 'accent',
+    Tutorials: 'default',
+    Products: 'amber',
+  };
+  return map[cat] ?? 'default';
+}
+
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+}
 ---
 
 <section class="posts-section container" aria-labelledby="posts-heading">
@@ -13,20 +38,20 @@ import { featuredPost, recentPosts } from '../data/posts';
   <div class="posts-grid">
     <!-- BIG featured card -->
     <article class="card-big">
-      <a href={`/blog/${featuredPost.slug}`} class="card-link" aria-label={featuredPost.title}>
+      <a href={`/blog/${featuredPost.slug}`} class="card-link" aria-label={featuredPost.data.title}>
         <div class="card-cover">
-          <CoverArt type={featuredPost.coverType} height={210} title={featuredPost.title} />
+          <CoverArt type={featuredPost.data.coverType} height={210} title={featuredPost.data.title} />
         </div>
         <div class="card-body">
           <div class="card-meta">
-            <span class={`badge ${featuredPost.categoryStyle}`}>{featuredPost.category}</span>
-            <span class="card-date font-mono">{featuredPost.date}</span>
+            <span class={`badge ${categoryStyle(featuredPost.data.category)}`}>{featuredPost.data.category}</span>
+            <span class="card-date font-mono">{fmtDate(featuredPost.data.pubDate)}</span>
           </div>
-          <h3 class="card-title">{featuredPost.title}</h3>
-          <p class="card-desc">{featuredPost.description}</p>
+          <h3 class="card-title">{featuredPost.data.title}</h3>
+          <p class="card-desc">{featuredPost.data.description}</p>
         </div>
         <div class="card-footer">
-          <span class="read-time font-mono">{featuredPost.readTime}</span>
+          <span class="read-time font-mono">{featuredPost.data.readingTime}</span>
           <span class="card-cta">Read article →</span>
         </div>
       </a>
@@ -36,17 +61,17 @@ import { featuredPost, recentPosts } from '../data/posts';
     <div class="cards-stack">
       {recentPosts.map((post) => (
         <article class="card-sm">
-          <a href={`/blog/${post.slug}`} class="card-sm-link" aria-label={post.title}>
+          <a href={`/blog/${post.slug}`} class="card-sm-link" aria-label={post.data.title}>
             <div class="card-sm-thumb">
-              <CoverArt type={post.coverType} height={90} title={post.title} />
+              <CoverArt type={post.data.coverType} height={90} title={post.data.title} />
             </div>
             <div class="card-sm-body">
               <div class="card-meta">
-                <span class={`badge ${post.categoryStyle}`}>{post.category}</span>
-                <span class="card-date font-mono">{post.date}</span>
+                <span class={`badge ${categoryStyle(post.data.category)}`}>{post.data.category}</span>
+                <span class="card-date font-mono">{fmtDate(post.data.pubDate)}</span>
               </div>
-              <h3 class="card-sm-title">{post.title}</h3>
-              <p class="card-sm-desc">{post.description}</p>
+              <h3 class="card-sm-title">{post.data.title}</h3>
+              <p class="card-sm-desc">{post.data.description}</p>
             </div>
           </a>
         </article>
